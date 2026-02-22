@@ -1,0 +1,19 @@
+import SwiftUI
+
+struct AuthGateView: View {
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        Group {
+            if authManager.isLoading {
+                LoadingStateView()
+            } else if authManager.isAuthenticated {
+                MainTabView()
+            } else {
+                NavigationStack {
+                    LoginView()
+                }
+            }
+        }
+    }
+}

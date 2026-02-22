@@ -1,17 +1,14 @@
-//
-//  NineByFourApp.swift
-//  NineByFour
-//
-//  Created by andre wilkinson on 2/21/26.
-//
-
 import SwiftUI
 
 @main
 struct NineByFourApp: App {
+    @State private var authManager = AuthManager()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AuthGateView()
+                .environment(authManager)
+                .preferredColorScheme(.dark)
         }
     }
 }

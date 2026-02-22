@@ -65,6 +65,8 @@
 			);
 			name = NineByFour;
 			packageProductDependencies = (
+				03C3FDF22F4A943B0083B32D /* Kingfisher */,
+				03C3FDF32F4A943B0083B32D /* KeychainAccess */,
 			);
 			productName = NineByFour;
 			productReference = 03C3FDD72F4A943B0083B32D /* NineByFour.app */;
@@ -98,6 +100,10 @@
 			productRefGroup = 03C3FDD82F4A943B0083B32D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				03C3FDF02F4A943B0083B32D /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				03C3FDF12F4A943B0083B32D /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+			);
 			targets = (
 				03C3FDD62F4A943B0083B32D /* NineByFour */,
 			);
@@ -177,7 +183,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -234,7 +240,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -328,6 +334,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		03C3FDF02F4A943B0083B32D /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+		03C3FDF12F4A943B0083B32D /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		03C3FDF22F4A943B0083B32D /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 03C3FDF02F4A943B0083B32D /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		03C3FDF32F4A943B0083B32D /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 03C3FDF12F4A943B0083B32D /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 03C3FDCF2F4A943B0083B32D /* Project object */;
 }
