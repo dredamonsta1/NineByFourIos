@@ -15,7 +15,8 @@ final class ProfileViewModel {
         errorMessage = nil
 
         do {
-            profileList = try await APIClient.shared.request(endpoint: .profileList)
+            let response: ProfileListResponse = try await APIClient.shared.request(endpoint: .profileList)
+            profileList = response.list
         } catch let error as APIError {
             if profileList.isEmpty {
                 errorMessage = error.errorDescription
@@ -56,4 +57,8 @@ final class ProfileViewModel {
             errorMessage = "Failed to remove artist."
         }
     }
+}
+
+private struct ProfileListResponse: Codable {
+    let list: [Artist]
 }
