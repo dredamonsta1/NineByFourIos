@@ -2,8 +2,9 @@ import Foundation
 import Observation
 
 enum DiscoverSection: String, CaseIterable {
+    case artists = "Artists"
     case videos = "Videos"
-    case releases = "Upcoming Releases"
+    case releases = "Releases"
 }
 
 @Observable
@@ -12,7 +13,70 @@ final class DiscoverViewModel {
     var upcomingReleases: [UpcomingRelease] = []
     var isLoading = false
     var errorMessage: String?
-    var selectedSection: DiscoverSection = .videos
+    var selectedSection: DiscoverSection = .artists
+
+    // Artist search
+    var searchText = ""
+    var searchResults: [Artist] = []
+    var searchLoading = false
+    var profileListIds: Set<Int> = []
+    var profileListCount: Int = 0
+
+    private static let maxListSize = 20
+
+    var isListFull: Bool { profileListCount >= Self.maxListSize }
+
+    @MainActor
+    func searchArtists() async {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+
+        searchLoading = true
+
+        do {
+            let queryItems = [
+                URLQueryItem(name: "search", value: query),
+                URLQueryItem(name: "page", value: "1"),
+                URLQueryItem(name: "limit", value: "20")
+            ]
+            let response: PaginatedArtistResponse = try await APIClient.shared.request(
+                endpoint: .artists,
+                queryItems: queryItems
+            )
+            searchResults = response.artists
+        } catch {
+            searchResults = []
+        }
+
+        searchLoading = false
+    }
+
+    @MainActor
+    func addToProfileList(artist: Artist) async {
+        guard !isListFull, !profileListIds.contains(artist.artistId) else { return }
+
+        do {
+            try await APIClient.shared.requestVoid(endpoint: .addToProfileList(artistId: artist.artistId))
+            profileListIds.insert(artist.artistId)
+            profileListCount += 1
+        } catch {
+            // Silently fail
+        }
+    }
+
+    @MainActor
+    func loadProfileListIds() async {
+        do {
+            let response: ProfileListIdsResponse = try await APIClient.shared.request(endpoint: .profileList)
+            profileListIds = Set(response.list.map(\.artistId))
+            profileListCount = response.list.count
+        } catch {
+            // Silently fail — user may not be logged in
+        }
+    }
 
     @MainActor
     func loadVideos() async {
@@ -71,8 +135,21 @@ final class DiscoverViewModel {
 
         async let v: () = loadVideos()
         async let r: () = loadUpcomingReleases()
-        _ = await (v, r)
+        async let p: () = loadProfileListIds()
+        _ = await (v, r, p)
 
         isLoading = false
+    }
+}
+
+private struct ProfileListIdsResponse: Codable {
+    let list: [ProfileListArtist]
+
+    struct ProfileListArtist: Codable {
+        let artistId: Int
+
+        enum CodingKeys: String, CodingKey {
+            case artistId = "artist_id"
+        }
     }
 }

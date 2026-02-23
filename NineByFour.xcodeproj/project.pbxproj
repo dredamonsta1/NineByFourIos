@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0366C3A52F4B7155000526AB /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 03C3FDF22F4A943B0083B32D /* Kingfisher */; };
+		0366C3A62F4B7155000526AB /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 03C3FDF32F4A943B0083B32D /* KeychainAccess */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		03C3FDD72F4A943B0083B32D /* NineByFour.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NineByFour.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0366C3A62F4B7155000526AB /* KeychainAccess in Frameworks */,
+				0366C3A52F4B7155000526AB /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,14 +103,14 @@
 			);
 			mainGroup = 03C3FDCE2F4A943B0083B32D;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
-			productRefGroup = 03C3FDD82F4A943B0083B32D /* Products */;
-			projectDirPath = "";
-			projectRoot = "";
 			packageReferences = (
 				03C3FDF02F4A943B0083B32D /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				03C3FDF12F4A943B0083B32D /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 03C3FDD82F4A943B0083B32D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				03C3FDD62F4A943B0083B32D /* NineByFour */,
 			);
