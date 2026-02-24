@@ -7,6 +7,7 @@ final class ArtistDetailViewModel {
     var isLoading = false
     var errorMessage: String?
     var hasClout = false
+    var isInProfileList = false
 
     @MainActor
     func loadArtist(id: Int) async {
@@ -26,25 +27,58 @@ final class ArtistDetailViewModel {
     }
 
     @MainActor
-    func toggleClout() async {
-        guard let artistId = artist?.artistId else { return }
+    func checkProfileList() async {
+        do {
+            let response: DetailProfileListResponse = try await APIClient.shared.request(endpoint: .profileList)
+            let ids = Set(response.list.map(\.artistId))
+            if let artistId = artist?.artistId {
+                isInProfileList = ids.contains(artistId)
+            }
+        } catch {
+            // Not logged in or no list
+        }
+    }
+
+    @MainActor
+    func toggleClout(isAuthenticated: Bool) async {
+        guard isAuthenticated, let artist = artist else { return }
 
         do {
             if hasClout {
                 let response: CloutResponse = try await APIClient.shared.request(
-                    endpoint: .removeClout(id: artistId)
+                    endpoint: .removeClout(id: artist.artistId)
                 )
-                artist?.count = response.newCloutCount
+                self.artist?.count = response.newCloutCount
                 hasClout = false
             } else {
                 let response: CloutResponse = try await APIClient.shared.request(
-                    endpoint: .clout(id: artistId)
+                    endpoint: .clout(id: artist.artistId)
                 )
-                artist?.count = response.newCloutCount
+                self.artist?.count = response.newCloutCount
                 hasClout = true
+
+                // Also add to profile list if not already there
+                if !isInProfileList {
+                    try? await APIClient.shared.requestVoid(
+                        endpoint: .addToProfileList(artistId: artist.artistId)
+                    )
+                    isInProfileList = true
+                }
             }
         } catch {
-            // Silently fail — user may not be authenticated
+            // Silently fail
+        }
+    }
+}
+
+private struct DetailProfileListResponse: Codable {
+    let list: [DetailProfileListArtist]
+
+    struct DetailProfileListArtist: Codable {
+        let artistId: Int
+
+        enum CodingKeys: String, CodingKey {
+            case artistId = "artist_id"
         }
     }
 }

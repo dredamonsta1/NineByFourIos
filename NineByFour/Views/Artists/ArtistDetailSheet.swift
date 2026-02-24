@@ -4,6 +4,7 @@ struct ArtistDetailSheet: View {
     let artistId: Int
     @State private var viewModel = ArtistDetailViewModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
 
     var body: some View {
         NavigationStack {
@@ -56,7 +57,7 @@ struct ArtistDetailSheet: View {
                                 // Clout button
                                 HStack(spacing: 8) {
                                     Button {
-                                        Task { await viewModel.toggleClout() }
+                                        Task { await viewModel.toggleClout(isAuthenticated: authManager.isAuthenticated) }
                                     } label: {
                                         HStack(spacing: 4) {
                                             Image(systemName: viewModel.hasClout ? "flame.fill" : "flame")
@@ -113,6 +114,9 @@ struct ArtistDetailSheet: View {
         }
         .task {
             await viewModel.loadArtist(id: artistId)
+            if authManager.isAuthenticated {
+                await viewModel.checkProfileList()
+            }
         }
     }
 }
