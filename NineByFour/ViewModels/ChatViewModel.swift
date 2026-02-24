@@ -10,20 +10,17 @@ final class ChatViewModel {
     var hasMore = false
 
     private var pollingTask: Task<Void, Never>?
-    private var currentPage = 1
 
     @MainActor
     func loadMessages(conversationId: Int) async {
         isLoading = messages.isEmpty
         errorMessage = nil
-        currentPage = 1
 
         do {
             let response: MessagesResponse = try await APIClient.shared.request(
-                endpoint: .conversationMessages(id: conversationId),
-                queryItems: [URLQueryItem(name: "page", value: "1")]
+                endpoint: .conversationMessages(id: conversationId)
             )
-            messages = Array(response.messages.reversed())
+            messages = response.messages
             hasMore = response.hasMore
         } catch let error as APIError {
             errorMessage = error.errorDescription
@@ -63,17 +60,14 @@ final class ChatViewModel {
 
     @MainActor
     func loadMore(conversationId: Int) async {
-        guard hasMore else { return }
-        let nextPage = currentPage + 1
+        guard hasMore, let oldestId = messages.first?.messageId else { return }
 
         do {
             let response: MessagesResponse = try await APIClient.shared.request(
                 endpoint: .conversationMessages(id: conversationId),
-                queryItems: [URLQueryItem(name: "page", value: "\(nextPage)")]
+                queryItems: [URLQueryItem(name: "before", value: "\(oldestId)")]
             )
-            let older = Array(response.messages.reversed())
-            messages.insert(contentsOf: older, at: 0)
-            currentPage = nextPage
+            messages.insert(contentsOf: response.messages, at: 0)
             hasMore = response.hasMore
         } catch {
             // Silently fail on pagination
@@ -101,12 +95,10 @@ final class ChatViewModel {
     private func refreshLatest(conversationId: Int) async {
         do {
             let response: MessagesResponse = try await APIClient.shared.request(
-                endpoint: .conversationMessages(id: conversationId),
-                queryItems: [URLQueryItem(name: "page", value: "1")]
+                endpoint: .conversationMessages(id: conversationId)
             )
-            let latest = Array(response.messages.reversed())
-            if latest.count != messages.suffix(latest.count).count || latest.last?.messageId != messages.last?.messageId {
-                messages = latest
+            if response.messages.last?.messageId != messages.last?.messageId {
+                messages = response.messages
             }
         } catch {
             // Silently fail on poll

@@ -164,6 +164,17 @@ struct ProfileTab: View {
     }
 
     private func followListSheet(title: String, users: [FollowUser]) -> some View {
+        FollowListSheet(title: title, users: users, currentUserId: authManager.currentUser?.id)
+    }
+}
+
+private struct FollowListSheet: View {
+    let title: String
+    let users: [FollowUser]
+    let currentUserId: Int?
+    @State private var activeConversation: Conversation?
+
+    var body: some View {
         NavigationStack {
             ZStack {
                 Color.Theme.bgBase.ignoresSafeArea()
@@ -180,6 +191,12 @@ struct ProfileTab: View {
 
                             Text(user.username)
                                 .foregroundStyle(Color.Theme.textPrimary)
+
+                            Spacer()
+
+                            DMButton(targetUserId: user.userId, targetUsername: user.username) { conversation in
+                                activeConversation = conversation
+                            }
                         }
                         .listRowBackground(Color.Theme.bgCard)
                     }
@@ -189,6 +206,95 @@ struct ProfileTab: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .navigationDestination(item: $activeConversation) { conversation in
+                ChatView(conversation: conversation)
+            }
         }
+    }
+}
+
+private struct DMButton: View {
+    let targetUserId: Int
+    let targetUsername: String
+    let onOpenChat: (Conversation) -> Void
+
+    @State private var canDM = false
+    @State private var existingConvId: Int?
+    @State private var isLoading = true
+
+    var body: some View {
+        if isLoading {
+            ProgressView()
+                .scaleEffect(0.7)
+                .task { await checkDM() }
+        } else if canDM {
+            Button {
+                Task { await openConversation() }
+            } label: {
+                Image(systemName: "envelope.fill")
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.accent)
+                    .padding(8)
+                    .background(Color.Theme.accent.opacity(0.15))
+                    .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func checkDM() async {
+        do {
+            let response: CheckDMResponse = try await APIClient.shared.request(
+                endpoint: .checkDM(userId: targetUserId)
+            )
+            canDM = response.canDM
+            existingConvId = response.conversationId
+        } catch {
+            canDM = false
+        }
+        isLoading = false
+    }
+
+    private func openConversation() async {
+        var convId = existingConvId
+
+        if convId == nil {
+            do {
+                let response: CreateConversationResponse = try await APIClient.shared.request(
+                    endpoint: .createConversation,
+                    body: CreateConversationBody(recipientId: targetUserId)
+                )
+                convId = response.conversationId
+            } catch {
+                return
+            }
+        }
+
+        guard let convId else { return }
+
+        let conversation = Conversation(
+            conversationId: convId,
+            userOne: 0,
+            userTwo: 0,
+            otherUsername: targetUsername,
+            otherUserId: targetUserId
+        )
+        onOpenChat(conversation)
+    }
+}
+
+private struct CreateConversationBody: Encodable {
+    let recipientId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case recipientId = "recipient_id"
+    }
+}
+
+private struct CreateConversationResponse: Codable {
+    let conversationId: Int
+
+    enum CodingKeys: String, CodingKey {
+        case conversationId = "conversation_id"
     }
 }
