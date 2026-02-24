@@ -3,6 +3,7 @@ import SwiftUI
 struct FeedPostCard: View {
     let post: FeedPost
     let currentUserId: Int?
+    var onTapUsername: ((Int) -> Void)?
     var onDelete: (() -> Void)?
 
     var body: some View {
@@ -14,9 +15,13 @@ struct FeedPostCard: View {
                     .foregroundStyle(Color.Theme.accent)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(post.username ?? "Unknown")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(Color.Theme.textPrimary)
+                    Button {
+                        onTapUsername?(post.userId)
+                    } label: {
+                        Text(post.username ?? "Unknown")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(Color.Theme.accent)
+                    }
 
                     Text(post.createdAt.toDate()?.relativeString() ?? "")
                         .font(.caption2)

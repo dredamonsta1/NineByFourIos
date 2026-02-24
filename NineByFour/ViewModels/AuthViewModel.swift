@@ -7,6 +7,7 @@ final class AuthViewModel {
     var password = ""
     var email = ""
     var confirmPassword = ""
+    var inviteCode = ""
     var isLoading = false
     var errorMessage: String?
 
@@ -29,7 +30,7 @@ final class AuthViewModel {
 
     @MainActor
     func register(authManager: AuthManager) async {
-        guard !username.isEmpty, !email.isEmpty, !password.isEmpty else {
+        guard !username.isEmpty, !email.isEmpty, !password.isEmpty, !inviteCode.isEmpty else {
             errorMessage = "All fields are required."
             return
         }
@@ -42,7 +43,12 @@ final class AuthViewModel {
         errorMessage = nil
 
         do {
-            let body = RegisterBody(username: username, email: email, password: password)
+            let body = RegisterBody(
+                username: username,
+                email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+                password: password,
+                inviteCode: inviteCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            )
             let _: LoginResponse = try await APIClient.shared.request(
                 endpoint: .register,
                 body: body
@@ -67,4 +73,10 @@ private struct RegisterBody: Encodable {
     let username: String
     let email: String
     let password: String
+    let inviteCode: String
+
+    enum CodingKeys: String, CodingKey {
+        case username, email, password
+        case inviteCode = "invite_code"
+    }
 }

@@ -18,19 +18,6 @@ struct RegisterView: View {
                         .foregroundStyle(Color.Theme.textPrimary)
 
                     VStack(spacing: 16) {
-                        TextField("Username", text: $viewModel.username)
-                            .textFieldStyle(.plain)
-                            .padding(12)
-                            .background(Color.Theme.bgInput)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.Theme.borderDefault, lineWidth: 1)
-                            )
-                            .foregroundStyle(Color.Theme.textPrimary)
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.never)
-
                         TextField("Email", text: $viewModel.email)
                             .textFieldStyle(.plain)
                             .padding(12)
@@ -44,6 +31,32 @@ struct RegisterView: View {
                             .autocorrectionDisabled()
                             .textInputAutocapitalization(.never)
                             .keyboardType(.emailAddress)
+
+                        TextField("Invite Code", text: $viewModel.inviteCode)
+                            .textFieldStyle(.plain)
+                            .padding(12)
+                            .background(Color.Theme.bgInput)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.Theme.borderDefault, lineWidth: 1)
+                            )
+                            .foregroundStyle(Color.Theme.textPrimary)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.characters)
+
+                        TextField("Username", text: $viewModel.username)
+                            .textFieldStyle(.plain)
+                            .padding(12)
+                            .background(Color.Theme.bgInput)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.Theme.borderDefault, lineWidth: 1)
+                            )
+                            .foregroundStyle(Color.Theme.textPrimary)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
 
                         SecureField("Password", text: $viewModel.password)
                             .textFieldStyle(.plain)

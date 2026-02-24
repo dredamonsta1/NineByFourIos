@@ -4,6 +4,7 @@ struct FeedTab: View {
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel = FeedViewModel()
     @State private var showPostCreator = false
+    @State private var selectedProfileUserId: Int?
 
     var body: some View {
         NavigationStack {
@@ -30,7 +31,10 @@ struct FeedTab: View {
                             ForEach(viewModel.posts) { post in
                                 FeedPostCard(
                                     post: post,
-                                    currentUserId: authManager.currentUser?.id
+                                    currentUserId: authManager.currentUser?.id,
+                                    onTapUsername: { userId in
+                                        selectedProfileUserId = userId
+                                    }
                                 ) {
                                     Task {
                                         await viewModel.deletePost(
@@ -66,6 +70,12 @@ struct FeedTab: View {
             .sheet(isPresented: $showPostCreator) {
                 PostCreatorView(viewModel: viewModel)
             }
+            .sheet(item: Binding(
+                get: { selectedProfileUserId.map { ProfileSheetItem(userId: $0) } },
+                set: { selectedProfileUserId = $0?.userId }
+            )) { item in
+                UserProfileView(userId: item.userId)
+            }
         }
         .task {
             if authManager.isAuthenticated && viewModel.posts.isEmpty {
@@ -73,4 +83,9 @@ struct FeedTab: View {
             }
         }
     }
+}
+
+private struct ProfileSheetItem: Identifiable {
+    let userId: Int
+    var id: Int { userId }
 }

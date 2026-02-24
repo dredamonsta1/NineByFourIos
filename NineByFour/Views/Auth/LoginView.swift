@@ -90,6 +90,17 @@ struct LoginView: View {
                             .foregroundStyle(Color.Theme.accent)
                     }
                     .font(.subheadline)
+
+                    // Waitlist link
+                    NavigationLink {
+                        WaitlistView()
+                    } label: {
+                        Text("No invite code? ")
+                            .foregroundStyle(Color.Theme.textSecondary)
+                        + Text("Join the Waitlist")
+                            .foregroundStyle(Color.Theme.accent)
+                    }
+                    .font(.subheadline)
                 }
                 .padding(.horizontal, 24)
             }
