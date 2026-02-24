@@ -9,6 +9,16 @@ final class ProfileViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    // Artist search
+    var searchText = ""
+    var searchResults: [Artist] = []
+    var searchLoading = false
+
+    private static let maxListSize = 20
+
+    var isListFull: Bool { profileList.count >= Self.maxListSize }
+    var profileListIds: Set<Int> { Set(profileList.map(\.artistId)) }
+
     @MainActor
     func loadProfileList() async {
         isLoading = profileList.isEmpty
@@ -28,6 +38,46 @@ final class ProfileViewModel {
         }
 
         isLoading = false
+    }
+
+    @MainActor
+    func searchArtists() async {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+
+        searchLoading = true
+
+        do {
+            let queryItems = [
+                URLQueryItem(name: "search", value: query),
+                URLQueryItem(name: "page", value: "1"),
+                URLQueryItem(name: "limit", value: "20")
+            ]
+            let response: PaginatedArtistResponse = try await APIClient.shared.request(
+                endpoint: .artists,
+                queryItems: queryItems
+            )
+            searchResults = response.artists
+        } catch {
+            searchResults = []
+        }
+
+        searchLoading = false
+    }
+
+    @MainActor
+    func addToProfileList(artist: Artist) async {
+        guard !isListFull, !profileListIds.contains(artist.artistId) else { return }
+
+        do {
+            try await APIClient.shared.requestVoid(endpoint: .addToProfileList(artistId: artist.artistId))
+            profileList.append(artist)
+        } catch {
+            // Silently fail
+        }
     }
 
     @MainActor

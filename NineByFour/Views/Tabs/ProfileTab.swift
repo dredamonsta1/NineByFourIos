@@ -6,6 +6,7 @@ struct ProfileTab: View {
     @State private var showImagePicker = false
     @State private var showFollowers = false
     @State private var showFollowing = false
+    @State private var searchDebounce: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -89,7 +90,50 @@ struct ProfileTab: View {
                                     .font(.headline)
                                     .foregroundStyle(Color.Theme.textPrimary)
 
-                                if viewModel.profileList.isEmpty {
+                                // Artist search
+                                VStack(spacing: 6) {
+                                    SearchBar(text: $viewModel.searchText, placeholder: "Search for an artist...")
+                                        .onChange(of: viewModel.searchText) { _, _ in
+                                            searchDebounce?.cancel()
+                                            searchDebounce = Task {
+                                                try? await Task.sleep(for: .milliseconds(400))
+                                                guard !Task.isCancelled else { return }
+                                                await viewModel.searchArtists()
+                                            }
+                                        }
+
+                                    Text("\(viewModel.profileList.count)/20 artists in your list")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.Theme.textSecondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+
+                                // Show search results when searching, otherwise show saved list
+                                if viewModel.searchLoading {
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 8)
+                                } else if !viewModel.searchText.isEmpty {
+                                    if viewModel.searchResults.isEmpty {
+                                        Text("No artists found")
+                                            .font(.subheadline)
+                                            .foregroundStyle(Color.Theme.textSecondary)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .padding(.vertical, 8)
+                                    } else {
+                                        LazyVStack(spacing: 8) {
+                                            ForEach(viewModel.searchResults) { artist in
+                                                ArtistSearchRow(
+                                                    artist: artist,
+                                                    isAdded: viewModel.profileListIds.contains(artist.artistId),
+                                                    isListFull: viewModel.isListFull
+                                                ) {
+                                                    Task { await viewModel.addToProfileList(artist: artist) }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else if viewModel.profileList.isEmpty {
                                     Text("No artists in your list yet")
                                         .font(.subheadline)
                                         .foregroundStyle(Color.Theme.textSecondary)
