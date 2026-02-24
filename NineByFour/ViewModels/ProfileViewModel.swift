@@ -74,7 +74,10 @@ final class ProfileViewModel {
 
         do {
             try await APIClient.shared.requestVoid(endpoint: .addToProfileList(artistId: artist.artistId))
-            profileList.append(artist)
+            let cloutResponse: CloutResponse = try await APIClient.shared.request(endpoint: .clout(id: artist.artistId))
+            var updatedArtist = artist
+            updatedArtist.count = cloutResponse.newCloutCount
+            profileList.append(updatedArtist)
         } catch {
             // Silently fail
         }
