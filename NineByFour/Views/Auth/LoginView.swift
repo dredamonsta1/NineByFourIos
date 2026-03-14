@@ -14,12 +14,9 @@ struct LoginView: View {
 
                     // Logo / Title
                     VStack(spacing: 8) {
-                        Text("9by4")
+                        Text("Vedioz")
                             .font(.system(size: 48, weight: .bold))
                             .foregroundStyle(Color.Theme.accent)
-                        Text("NineByFour")
-                            .font(.title3)
-                            .foregroundStyle(Color.Theme.textSecondary)
                     }
 
                     Spacer().frame(height: 20)

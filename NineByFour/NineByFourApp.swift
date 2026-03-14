@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct NineByFourApp: App {
+struct VediozApp: App {
     @State private var authManager = AuthManager()
 
     var body: some Scene {
