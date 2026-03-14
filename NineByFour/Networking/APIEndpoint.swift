@@ -31,6 +31,7 @@ nonisolated enum APIEndpoint: Sendable {
     case feedImage
     case feedVideo
     case feedVideoUrl
+    case feedMusic
     case deleteFeedPost(type: String, id: Int)
 
     // MARK: - Posts (legacy)
@@ -82,11 +83,21 @@ nonisolated enum APIEndpoint: Sendable {
     case waitlistToggle
     case waitlistDelete(id: Int)
 
+    // MARK: - Events
+    case events
+    case createEvent
+    case deleteEvent(id: Int)
+
     // MARK: - Admin
     case adminStats
     case adminApproveCreator
     case adminWaitlistEntries
     case adminResetUser
+    case adminUsers
+    case adminUpdateUserRole(id: Int)
+    case adminDeleteUser(id: Int)
+    case adminSettings
+    case adminUpdateSettings
 
     var path: String {
         switch self {
@@ -116,6 +127,7 @@ nonisolated enum APIEndpoint: Sendable {
         case .feedImage: return "/feed/image"
         case .feedVideo: return "/feed/video"
         case .feedVideoUrl: return "/feed/video-url"
+        case .feedMusic: return "/feed/music"
         case .deleteFeedPost(let type, let id): return "/feed/\(type)/\(id)"
 
         // Posts
@@ -167,11 +179,21 @@ nonisolated enum APIEndpoint: Sendable {
         case .waitlistToggle: return "/waitlist/toggle"
         case .waitlistDelete(let id): return "/waitlist/\(id)"
 
+        // Events
+        case .events: return "/events"
+        case .createEvent: return "/events"
+        case .deleteEvent(let id): return "/events/\(id)"
+
         // Admin
         case .adminStats: return "/admin/stats"
         case .adminApproveCreator: return "/admin/approve-creator"
         case .adminWaitlistEntries: return "/admin/waitlist-entries"
         case .adminResetUser: return "/admin/reset-user"
+        case .adminUsers: return "/admin/users"
+        case .adminUpdateUserRole(let id): return "/admin/users/\(id)/role"
+        case .adminDeleteUser(let id): return "/admin/users/\(id)"
+        case .adminSettings: return "/admin/settings"
+        case .adminUpdateSettings: return "/admin/settings"
         }
     }
 
@@ -179,22 +201,23 @@ nonisolated enum APIEndpoint: Sendable {
         switch self {
         case .register, .login, .uploadProfileImage,
              .createArtist, .uploadArtistImage, .addAlbums,
-             .feedText, .feedImage, .feedVideo, .feedVideoUrl,
+             .feedText, .feedImage, .feedVideo, .feedVideoUrl, .feedMusic,
              .createPost, .createImagePost,
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
              .waitlistJoin, .waitlistVerify, .waitlistApprove, .waitlistReject, .waitlistToggle,
-             .adminApproveCreator:
+             .adminApproveCreator, .createEvent:
             return .POST
 
         case .updateArtist, .updateArtistImage, .clout, .removeClout, .updatePost:
             return .PUT
 
-        case .markConversationRead, .adminResetUser:
+        case .markConversationRead, .adminResetUser, .adminUpdateUserRole, .adminUpdateSettings:
             return .PATCH
 
         case .deleteArtist, .deleteAlbum, .deleteFeedPost, .deletePost, .deleteImagePost,
-             .removeFromProfileList, .unfollow, .waitlistDelete:
+             .removeFromProfileList, .unfollow, .waitlistDelete,
+             .deleteEvent, .adminDeleteUser:
             return .DELETE
 
         default:

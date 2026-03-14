@@ -4,6 +4,7 @@ import Observation
 enum DiscoverSection: String, CaseIterable {
     case videos = "Videos"
     case releases = "Releases"
+    case events = "Events"
 }
 
 @Observable

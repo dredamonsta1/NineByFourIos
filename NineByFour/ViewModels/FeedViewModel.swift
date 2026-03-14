@@ -8,6 +8,11 @@ final class FeedViewModel {
     var errorMessage: String?
     var newPostContent = ""
 
+    // Music post creation state
+    var musicTitle = ""
+    var musicStreamUrl = ""
+    var musicCaption = ""
+
     @MainActor
     func loadFeed() async {
         isLoading = true
@@ -44,6 +49,32 @@ final class FeedViewModel {
     }
 
     @MainActor
+    func createMusicPost() async -> Bool {
+        let trimmedUrl = musicStreamUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUrl.isEmpty else { return false }
+
+        do {
+            let body = MusicPostBody(
+                streamUrl: trimmedUrl,
+                title: musicTitle.isEmpty ? nil : musicTitle,
+                caption: musicCaption.isEmpty ? nil : musicCaption
+            )
+            let _: FeedPost = try await APIClient.shared.request(
+                endpoint: .feedMusic,
+                body: body
+            )
+            musicTitle = ""
+            musicStreamUrl = ""
+            musicCaption = ""
+            await loadFeed()
+            return true
+        } catch {
+            errorMessage = "Failed to share music."
+            return false
+        }
+    }
+
+    @MainActor
     func deletePost(type: String, id: Int) async {
         do {
             try await APIClient.shared.requestVoid(endpoint: .deleteFeedPost(type: type, id: id))
@@ -56,4 +87,16 @@ final class FeedViewModel {
 
 private struct TextPostBody: Encodable {
     let content: String
+}
+
+private struct MusicPostBody: Encodable {
+    let streamUrl: String
+    let title: String?
+    let caption: String?
+
+    enum CodingKeys: String, CodingKey {
+        case streamUrl = "streamUrl"
+        case title
+        case caption
+    }
 }

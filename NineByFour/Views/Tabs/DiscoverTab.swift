@@ -1,8 +1,11 @@
 import SwiftUI
 
 struct DiscoverTab: View {
+    @Environment(AuthManager.self) private var authManager
     @State private var viewModel = DiscoverViewModel()
+    @State private var eventsViewModel = EventsViewModel()
     @State private var selectedVideoId: String?
+    @State private var showEventCreator = false
 
     var body: some View {
         NavigationStack {
@@ -40,11 +43,36 @@ struct DiscoverTab: View {
                         } else {
                             releasesSection
                         }
+                    case .events:
+                        if eventsViewModel.isLoading && eventsViewModel.events.isEmpty {
+                            LoadingStateView()
+                        } else if let error = eventsViewModel.errorMessage, eventsViewModel.events.isEmpty {
+                            ErrorStateView(message: error) {
+                                Task { await eventsViewModel.loadEvents() }
+                            }
+                        } else {
+                            eventsSection
+                        }
                     }
                 }
             }
             .navigationTitle("Discover")
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                if viewModel.selectedSection == .events && authManager.isAuthenticated {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            showEventCreator = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(Color.Theme.accent)
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showEventCreator) {
+                EventCreatorView(viewModel: eventsViewModel)
+            }
             .sheet(item: Binding(
                 get: { selectedVideoId.map { VideoSheetItem(videoId: $0) } },
                 set: { selectedVideoId = $0?.videoId }
@@ -69,6 +97,11 @@ struct DiscoverTab: View {
         }
         .task {
             await viewModel.loadAll()
+        }
+        .onChange(of: viewModel.selectedSection) { _, newSection in
+            if newSection == .events && eventsViewModel.events.isEmpty {
+                Task { await eventsViewModel.loadEvents() }
+            }
         }
     }
 
@@ -105,6 +138,40 @@ struct DiscoverTab: View {
         }
         .refreshable {
             await viewModel.loadUpcomingReleases()
+        }
+    }
+
+    // MARK: - Events Section
+
+    private var eventsSection: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                if eventsViewModel.events.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 36))
+                            .foregroundStyle(Color.Theme.textSecondary)
+                        Text("No upcoming events")
+                            .foregroundStyle(Color.Theme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                } else {
+                    ForEach(eventsViewModel.events) { event in
+                        EventCard(
+                            event: event,
+                            currentUserId: authManager.currentUser?.id
+                        ) {
+                            Task { await eventsViewModel.deleteEvent(id: event.id) }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .refreshable {
+            await eventsViewModel.loadEvents()
         }
     }
 }

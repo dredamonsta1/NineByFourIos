@@ -4,6 +4,7 @@ enum PostType: String, Codable, Sendable {
     case text
     case image
     case video
+    case music
 }
 
 struct FeedPost: Codable, Identifiable, Sendable {
@@ -18,6 +19,19 @@ struct FeedPost: Codable, Identifiable, Sendable {
     let createdAt: String
     var username: String?
 
+    // Music post fields
+    var musicTitle: String?
+    var audioUrl: String?
+    var streamUrl: String?
+    var platform: String?
+
+    // Agent post fields
+    var isAgentPost: Bool?
+    var provenanceUrls: [String]?
+    var agentId: Int?
+    var verifiedCount: Int?
+    var disputedCount: Int?
+
     enum CodingKeys: String, CodingKey {
         case id
         case userId = "user_id"
@@ -29,5 +43,14 @@ struct FeedPost: Codable, Identifiable, Sendable {
         case postType = "post_type"
         case createdAt = "created_at"
         case username
+        case musicTitle = "music_title"
+        case audioUrl = "audio_url"
+        case streamUrl = "stream_url"
+        case platform
+        case isAgentPost = "is_agent_post"
+        case provenanceUrls = "provenance_urls"
+        case agentId = "agent_id"
+        case verifiedCount = "verified_count"
+        case disputedCount = "disputed_count"
     }
 }
