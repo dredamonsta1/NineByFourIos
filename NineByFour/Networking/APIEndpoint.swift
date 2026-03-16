@@ -83,6 +83,9 @@ nonisolated enum APIEndpoint: Sendable {
     case waitlistToggle
     case waitlistDelete(id: Int)
 
+    // MARK: - Payments
+    case paymentStatus
+
     // MARK: - Events
     case events
     case createEvent
@@ -178,6 +181,9 @@ nonisolated enum APIEndpoint: Sendable {
         case .waitlistReject(let id): return "/waitlist/\(id)/reject"
         case .waitlistToggle: return "/waitlist/toggle"
         case .waitlistDelete(let id): return "/waitlist/\(id)"
+
+        // Payments
+        case .paymentStatus: return "/payments/status"
 
         // Events
         case .events: return "/events"
