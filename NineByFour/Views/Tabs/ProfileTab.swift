@@ -156,6 +156,21 @@ struct ProfileTab: View {
                                 }
                             }
 
+                            // Similar taste suggestions
+                            if !viewModel.tasteSuggestions.isEmpty {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("People with similar taste")
+                                        .font(.headline)
+                                        .foregroundStyle(Color.Theme.textPrimary)
+
+                                    LazyVStack(spacing: 8) {
+                                        ForEach(viewModel.tasteSuggestions) { suggestion in
+                                            SuggestionRow(suggestion: suggestion)
+                                        }
+                                    }
+                                }
+                            }
+
                             // Logout button
                             Button {
                                 authManager.logout()
@@ -264,7 +279,8 @@ struct ProfileTab: View {
         if let userId = authManager.currentUser?.id {
             async let f: () = viewModel.loadFollowers(userId: userId)
             async let g: () = viewModel.loadFollowing(userId: userId)
-            _ = await (f, g)
+            async let s: () = viewModel.loadTasteSuggestions()
+            _ = await (f, g, s)
         }
     }
 
@@ -385,6 +401,43 @@ private struct DMButton: View {
             otherUserId: targetUserId
         )
         onOpenChat(conversation)
+    }
+}
+
+private struct SuggestionRow: View {
+    let suggestion: TasteSuggestion
+    @State private var isFollowing = false
+    @State private var activeConversation: Conversation?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(suggestion.username)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(Color.Theme.textPrimary)
+                Text("\(suggestion.overlapCount) shared \(suggestion.overlapCount == 1 ? "artist" : "artists")")
+                    .font(.caption)
+                    .foregroundStyle(Color.Theme.accent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.Theme.accent.opacity(0.15))
+                    .cornerRadius(20)
+            }
+
+            Spacer()
+
+            FollowButton(userId: suggestion.userId, isFollowing: $isFollowing)
+
+            DMButton(targetUserId: suggestion.userId, targetUsername: suggestion.username) { conversation in
+                activeConversation = conversation
+            }
+        }
+        .padding(12)
+        .background(Color.Theme.bgCard)
+        .cornerRadius(10)
+        .navigationDestination(item: $activeConversation) { conversation in
+            ChatView(conversation: conversation)
+        }
     }
 }
 

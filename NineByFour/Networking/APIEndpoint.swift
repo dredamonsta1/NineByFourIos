@@ -55,6 +55,7 @@ nonisolated enum APIEndpoint: Sendable {
 
     // MARK: - Profile List
     case profileList
+    case profileSuggestions
     case userProfileList(userId: Int)
     case addToProfileList(artistId: Int)
     case removeFromProfileList(artistId: Int)
@@ -154,6 +155,7 @@ nonisolated enum APIEndpoint: Sendable {
 
         // Profile List
         case .profileList: return "/profile/list"
+        case .profileSuggestions: return "/profile/suggestions"
         case .userProfileList(let userId): return "/profile/user/\(userId)"
         case .addToProfileList(let artistId): return "/profile/list/\(artistId)"
         case .removeFromProfileList(let artistId): return "/profile/list/\(artistId)"

@@ -6,6 +6,7 @@ final class ProfileViewModel {
     var profileList: [Artist] = []
     var followers: [FollowUser] = []
     var following: [FollowUser] = []
+    var tasteSuggestions: [TasteSuggestion] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -109,6 +110,31 @@ final class ProfileViewModel {
         } catch {
             errorMessage = "Failed to remove artist."
         }
+    }
+
+    @MainActor
+    func loadTasteSuggestions() async {
+        do {
+            tasteSuggestions = try await APIClient.shared.request(endpoint: .profileSuggestions)
+        } catch {
+            // Silently fail
+        }
+    }
+}
+
+struct TasteSuggestion: Codable, Identifiable, Sendable {
+    let userId: Int
+    let username: String
+    let profileImage: String?
+    let overlapCount: Int
+
+    var id: Int { userId }
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case username
+        case profileImage = "profile_image"
+        case overlapCount = "overlap_count"
     }
 }
 
