@@ -4,6 +4,10 @@ nonisolated enum HTTPMethod: String, Sendable {
     case GET, POST, PUT, PATCH, DELETE
 }
 
+// Endpoint surface for the v1 fan iOS app. Artist-side commerce (uploads,
+// pricing, Stripe Connect, YourMusic) and admin tooling stay on the web —
+// see project_ios_v1_fan_app.md. Auth still uses the legacy /users/login
+// + /users/register pair until the OTP rewrite lands in Phase 2.
 nonisolated enum APIEndpoint: Sendable {
     // MARK: - Auth
     case register
@@ -12,16 +16,9 @@ nonisolated enum APIEndpoint: Sendable {
     case userProfile(userId: Int)
     case uploadProfileImage
 
-    // MARK: - Artists
+    // MARK: - Artists (read-only on iOS — artist-side management is web)
     case artists
     case artist(id: Int)
-    case createArtist
-    case updateArtist(id: Int)
-    case deleteArtist(id: Int)
-    case uploadArtistImage
-    case updateArtistImage(id: Int)
-    case addAlbums(artistId: Int)
-    case deleteAlbum(artistId: Int, albumId: Int)
     case clout(id: Int)
     case removeClout(id: Int)
 
@@ -33,12 +30,6 @@ nonisolated enum APIEndpoint: Sendable {
     case feedVideoUrl
     case feedMusic
     case deleteFeedPost(type: String, id: Int)
-
-    // MARK: - Posts (legacy)
-    case posts
-    case createPost
-    case updatePost(id: Int)
-    case deletePost(id: Int)
 
     // MARK: - Image Posts
     case imagePosts
@@ -53,14 +44,14 @@ nonisolated enum APIEndpoint: Sendable {
     // MARK: - Music
     case upcomingReleases
 
-    // MARK: - Profile List
+    // MARK: - Profile List (Top 20)
     case profileList
     case profileSuggestions
     case userProfileList(userId: Int)
     case addToProfileList(artistId: Int)
     case removeFromProfileList(artistId: Int)
 
-    // MARK: - Follows
+    // MARK: - Follows (user → user)
     case follow(userId: Int)
     case unfollow(userId: Int)
     case followers(userId: Int)
@@ -75,33 +66,14 @@ nonisolated enum APIEndpoint: Sendable {
     case unreadCount
     case checkDM(userId: Int)
 
-    // MARK: - Waitlist
+    // MARK: - Waitlist (sign-up flow only — admin entries surface is web)
     case waitlistJoin
     case waitlistVerify
-    case waitlistEntries
-    case waitlistApprove(id: Int)
-    case waitlistReject(id: Int)
-    case waitlistToggle
-    case waitlistDelete(id: Int)
-
-    // MARK: - Payments
-    case paymentStatus
 
     // MARK: - Events
     case events
     case createEvent
     case deleteEvent(id: Int)
-
-    // MARK: - Admin
-    case adminStats
-    case adminApproveCreator
-    case adminWaitlistEntries
-    case adminResetUser
-    case adminUsers
-    case adminUpdateUserRole(id: Int)
-    case adminDeleteUser(id: Int)
-    case adminSettings
-    case adminUpdateSettings
 
     var path: String {
         switch self {
@@ -115,13 +87,6 @@ nonisolated enum APIEndpoint: Sendable {
         // Artists
         case .artists: return "/artists"
         case .artist(let id): return "/artists/\(id)"
-        case .createArtist: return "/artists"
-        case .updateArtist(let id): return "/artists/\(id)"
-        case .deleteArtist(let id): return "/artists/\(id)"
-        case .uploadArtistImage: return "/artists/upload-image"
-        case .updateArtistImage(let id): return "/artists/\(id)/image"
-        case .addAlbums(let artistId): return "/artists/\(artistId)/albums"
-        case .deleteAlbum(let artistId, let albumId): return "/artists/\(artistId)/albums/\(albumId)"
         case .clout(let id): return "/artists/\(id)/clout"
         case .removeClout(let id): return "/artists/\(id)/clout/remove"
 
@@ -133,12 +98,6 @@ nonisolated enum APIEndpoint: Sendable {
         case .feedVideoUrl: return "/feed/video-url"
         case .feedMusic: return "/feed/music"
         case .deleteFeedPost(let type, let id): return "/feed/\(type)/\(id)"
-
-        // Posts
-        case .posts: return "/posts"
-        case .createPost: return "/posts"
-        case .updatePost(let id): return "/posts/\(id)"
-        case .deletePost(let id): return "/posts/\(id)"
 
         // Image Posts
         case .imagePosts: return "/image-posts"
@@ -178,73 +137,37 @@ nonisolated enum APIEndpoint: Sendable {
         // Waitlist
         case .waitlistJoin: return "/waitlist/join"
         case .waitlistVerify: return "/waitlist/verify"
-        case .waitlistEntries: return "/waitlist"
-        case .waitlistApprove(let id): return "/waitlist/\(id)/approve"
-        case .waitlistReject(let id): return "/waitlist/\(id)/reject"
-        case .waitlistToggle: return "/waitlist/toggle"
-        case .waitlistDelete(let id): return "/waitlist/\(id)"
-
-        // Payments
-        case .paymentStatus: return "/payments/status"
 
         // Events
         case .events: return "/events"
         case .createEvent: return "/events"
         case .deleteEvent(let id): return "/events/\(id)"
-
-        // Admin
-        case .adminStats: return "/admin/stats"
-        case .adminApproveCreator: return "/admin/approve-creator"
-        case .adminWaitlistEntries: return "/admin/waitlist-entries"
-        case .adminResetUser: return "/admin/reset-user"
-        case .adminUsers: return "/admin/users"
-        case .adminUpdateUserRole(let id): return "/admin/users/\(id)/role"
-        case .adminDeleteUser(let id): return "/admin/users/\(id)"
-        case .adminSettings: return "/admin/settings"
-        case .adminUpdateSettings: return "/admin/settings"
         }
     }
 
     var method: HTTPMethod {
         switch self {
         case .register, .login, .uploadProfileImage,
-             .createArtist, .uploadArtistImage, .addAlbums,
              .feedText, .feedImage, .feedVideo, .feedVideoUrl, .feedMusic,
-             .createPost, .createImagePost,
+             .createImagePost,
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
-             .waitlistJoin, .waitlistVerify, .waitlistApprove, .waitlistReject, .waitlistToggle,
-             .adminApproveCreator, .createEvent:
+             .waitlistJoin, .waitlistVerify, .createEvent:
             return .POST
 
-        case .updateArtist, .updateArtistImage, .clout, .removeClout, .updatePost:
+        case .clout, .removeClout:
             return .PUT
 
-        case .markConversationRead, .adminResetUser, .adminUpdateUserRole, .adminUpdateSettings:
+        case .markConversationRead:
             return .PATCH
 
-        case .deleteArtist, .deleteAlbum, .deleteFeedPost, .deletePost, .deleteImagePost,
-             .removeFromProfileList, .unfollow, .waitlistDelete,
-             .deleteEvent, .adminDeleteUser:
+        case .deleteFeedPost, .deleteImagePost,
+             .removeFromProfileList, .unfollow,
+             .deleteEvent:
             return .DELETE
 
         default:
             return .GET
-        }
-    }
-
-    var requiresAuth: Bool {
-        switch self {
-        case .register, .login,
-             .artists, .artist,
-             .imagePosts,
-             .youtubeFeed, .musicVideos,
-             .upcomingReleases,
-             .followers, .following,
-             .waitlistJoin, .waitlistVerify:
-            return false
-        default:
-            return true
         }
     }
 }

@@ -14,7 +14,7 @@ struct LoginView: View {
 
                     // Logo / Title
                     VStack(spacing: 8) {
-                        Text("Vedioz")
+                        Text("stanbox")
                             .font(.system(size: 48, weight: .bold))
                             .foregroundStyle(Color.Theme.accent)
                     }

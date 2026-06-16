@@ -6,13 +6,6 @@ struct ArtistDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthManager.self) private var authManager
 
-    // Album manager state
-    @State private var albumRows: [NewAlbumRow] = [NewAlbumRow()]
-    @State private var albumMessage: String?
-    @State private var isSavingAlbums = false
-
-    private var isAdmin: Bool { authManager.currentUser?.role == "admin" }
-
     var body: some View {
         NavigationStack {
             ZStack {
@@ -95,17 +88,9 @@ struct ArtistDetailSheet: View {
 
                                     LazyVStack(spacing: 10) {
                                         ForEach(albums) { album in
-                                            AlbumRow(album: album, onDelete: isAdmin ? {
-                                                Task { await viewModel.deleteAlbum(artistId: artistId, albumId: album.albumId) }
-                                            } : nil)
+                                            AlbumRow(album: album)
                                         }
                                     }
-                                }
-
-                                // Album manager (authenticated users)
-                                if authManager.isAuthenticated {
-                                    Divider().background(Color.Theme.borderDefault)
-                                    albumManagerSection(artistId: artist.artistId)
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -132,126 +117,12 @@ struct ArtistDetailSheet: View {
         }
     }
 
-    // MARK: - Album Manager
-
-    @ViewBuilder
-    private func albumManagerSection(artistId: Int) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Add Albums")
-                .font(.headline)
-                .foregroundStyle(Color.Theme.textPrimary)
-
-            Text("Album name is required. Year and certifications are optional.")
-                .font(.caption)
-                .foregroundStyle(Color.Theme.textSecondary)
-
-            ForEach($albumRows) { $row in
-                AlbumInputRow(row: $row, canRemove: albumRows.count > 1) {
-                    albumRows.removeAll { $0.id == row.id }
-                }
-            }
-
-            Button {
-                albumRows.append(NewAlbumRow())
-            } label: {
-                Label("Add Another Album", systemImage: "plus")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.Theme.accent)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.Theme.borderDefault, style: StrokeStyle(lineWidth: 1, dash: [4]))
-                    )
-            }
-
-            if let msg = albumMessage {
-                Text(msg)
-                    .font(.caption)
-                    .foregroundStyle(msg.contains("saved") ? Color.Theme.success : Color.Theme.error)
-            }
-
-            Button {
-                Task {
-                    isSavingAlbums = true
-                    albumMessage = nil
-                    let success = await viewModel.addAlbums(artistId: artistId, rows: albumRows)
-                    if success {
-                        albumRows = [NewAlbumRow()]
-                        albumMessage = "Albums saved!"
-                    } else {
-                        albumMessage = viewModel.errorMessage ?? "Failed to save albums."
-                    }
-                    isSavingAlbums = false
-                }
-            } label: {
-                Text(isSavingAlbums ? "Saving..." : "Save Albums")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding(14)
-                    .background(Color.Theme.accent)
-                    .foregroundStyle(.white)
-                    .cornerRadius(8)
-            }
-            .disabled(isSavingAlbums || albumRows.allSatisfy { $0.albumName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
-        }
-    }
-}
-
-// MARK: - Album Input Row
-
-private struct AlbumInputRow: View {
-    @Binding var row: NewAlbumRow
-    let canRemove: Bool
-    let onRemove: () -> Void
-
-    var body: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 8) {
-                TextField("Album name *", text: $row.albumName)
-                    .font(.subheadline)
-                    .padding(10)
-                    .background(Color.Theme.bgInput)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.Theme.borderDefault, lineWidth: 1))
-                    .foregroundStyle(Color.Theme.textPrimary)
-
-                if canRemove {
-                    Button(action: onRemove) {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(Color.Theme.error)
-                            .font(.title3)
-                    }
-                }
-            }
-
-            HStack(spacing: 8) {
-                TextField("Year", text: $row.year)
-                    .font(.subheadline)
-                    .keyboardType(.numberPad)
-                    .padding(10)
-                    .background(Color.Theme.bgInput)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.Theme.borderDefault, lineWidth: 1))
-                    .foregroundStyle(Color.Theme.textPrimary)
-
-                TextField("Certifications", text: $row.certifications)
-                    .font(.subheadline)
-                    .padding(10)
-                    .background(Color.Theme.bgInput)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.Theme.borderDefault, lineWidth: 1))
-                    .foregroundStyle(Color.Theme.textPrimary)
-            }
-        }
-    }
 }
 
 // MARK: - Album Row (existing albums)
 
 private struct AlbumRow: View {
     let album: Album
-    var onDelete: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -279,14 +150,6 @@ private struct AlbumRow: View {
             }
 
             Spacer()
-
-            if let onDelete {
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundStyle(Color.Theme.error)
-                }
-            }
         }
         .padding(10)
         .background(Color.Theme.bgCard)

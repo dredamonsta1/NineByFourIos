@@ -7,7 +7,6 @@ struct ProfileTab: View {
     @State private var showFollowers = false
     @State private var showFollowing = false
     @State private var searchDebounce: Task<Void, Never>?
-    @State private var creatorTier: String? = nil // nil = loading
 
     var body: some View {
         NavigationStack {
@@ -84,9 +83,6 @@ struct ProfileTab: View {
                             .frame(maxWidth: .infinity)
                             .background(Color.Theme.bgCard)
                             .cornerRadius(12)
-
-                            // Creator tier card
-                            creatorTierCard
 
                             // My List section
                             VStack(alignment: .leading, spacing: 10) {
@@ -213,64 +209,7 @@ struct ProfileTab: View {
         .task {
             if authManager.isAuthenticated {
                 await loadProfileData()
-                await loadCreatorTier()
             }
-        }
-    }
-
-    // MARK: - Creator Tier Card
-
-    @ViewBuilder
-    private var creatorTierCard: some View {
-        if authManager.currentUser?.role == "admin" {
-            // Admins always have creator access — no card needed
-            EmptyView()
-        } else if let tier = creatorTier {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Image(systemName: tier == "creator" ? "checkmark.seal.fill" : "lock.fill")
-                        .foregroundStyle(tier == "creator" ? Color.Theme.success : Color.Theme.textSecondary)
-                    Text(tier == "creator" ? "Creator Account" : "Free Account")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(tier == "creator" ? Color.Theme.success : Color.Theme.textPrimary)
-                    Spacer()
-                }
-
-                if tier != "creator" {
-                    Text("Upgrade to a Creator account to add and manage artists on the platform.")
-                        .font(.caption)
-                        .foregroundStyle(Color.Theme.textSecondary)
-
-                    if let url = URL(string: "https://vedioz.netlify.app/pricing") {
-                        Link(destination: url) {
-                            Text("View Creator Plans →")
-                                .font(.subheadline.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(12)
-                                .background(Color.Theme.accent)
-                                .foregroundStyle(.white)
-                                .cornerRadius(8)
-                        }
-                    }
-                }
-            }
-            .padding(14)
-            .background(Color.Theme.bgCard)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(tier == "creator" ? Color.Theme.success.opacity(0.4) : Color.Theme.borderDefault, lineWidth: 1)
-            )
-        }
-    }
-
-    private func loadCreatorTier() async {
-        guard authManager.currentUser?.role != "admin" else { return }
-        do {
-            let status: PaymentStatusResponse = try await APIClient.shared.request(endpoint: .paymentStatus)
-            creatorTier = status.creatorTier
-        } catch {
-            creatorTier = "free"
         }
     }
 
@@ -438,16 +377,6 @@ private struct SuggestionRow: View {
         .navigationDestination(item: $activeConversation) { conversation in
             ChatView(conversation: conversation)
         }
-    }
-}
-
-private struct PaymentStatusResponse: Decodable {
-    let creatorTier: String
-    let tierType: String?
-
-    enum CodingKeys: String, CodingKey {
-        case creatorTier = "creator_tier"
-        case tierType = "tier_type"
     }
 }
 
