@@ -47,6 +47,8 @@ final class AuthViewModel {
         }
         errorMessage = nil
         if !silent { infoMessage = nil }
+        isLoading = true
+        defer { isLoading = false }
 
         await authManager.requestCode(email: normalized)
 
@@ -72,6 +74,8 @@ final class AuthViewModel {
         }
         errorMessage = nil
         infoMessage = nil
+        isLoading = true
+        defer { isLoading = false }
 
         await authManager.verifyCode(email: email, code: trimmed)
 

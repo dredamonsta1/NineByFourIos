@@ -38,9 +38,12 @@ final class AuthManager {
         isLoading = false
     }
 
+    // Note: requestCode/verifyCode intentionally do NOT toggle isLoading.
+    // AuthGateView shows LoadingStateView while isLoading is true, which
+    // would unmount LoginView mid-request and wipe the OTP step + email
+    // state. Loading UI lives on the button via AuthViewModel.isLoading.
     @MainActor
     func requestCode(email: String) async {
-        isLoading = true
         errorMessage = nil
 
         do {
@@ -51,13 +54,10 @@ final class AuthManager {
         } catch {
             errorMessage = "Could not send code. Try again."
         }
-
-        isLoading = false
     }
 
     @MainActor
     func verifyCode(email: String, code: String) async {
-        isLoading = true
         errorMessage = nil
 
         do {
@@ -74,8 +74,6 @@ final class AuthManager {
         } catch {
             errorMessage = "Invalid or expired code."
         }
-
-        isLoading = false
     }
 
     @MainActor
