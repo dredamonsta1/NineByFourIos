@@ -6,10 +6,13 @@ nonisolated enum HTTPMethod: String, Sendable {
 
 // Endpoint surface for the v1 fan iOS app. Artist-side commerce (uploads,
 // pricing, Stripe Connect, YourMusic) and admin tooling stay on the web —
-// see project_ios_v1_fan_app.md. Auth still uses the legacy /users/login
-// + /users/register pair until the OTP rewrite lands in Phase 2.
+// see project_ios_v1_fan_app.md. The OTP pair (.requestCode/.verifyCode)
+// is the iOS sign-in path; .register/.login are orphan legacy kept compiling
+// for the unused RegisterView until that view is properly removed.
 nonisolated enum APIEndpoint: Sendable {
     // MARK: - Auth
+    case requestCode
+    case verifyCode
     case register
     case login
     case me
@@ -78,6 +81,8 @@ nonisolated enum APIEndpoint: Sendable {
     var path: String {
         switch self {
         // Auth
+        case .requestCode: return "/auth/send-code"
+        case .verifyCode: return "/auth/verify-code"
         case .register: return "/users/register"
         case .login: return "/users/login"
         case .me: return "/users/me"
@@ -147,7 +152,7 @@ nonisolated enum APIEndpoint: Sendable {
 
     var requiresAuth: Bool {
         switch self {
-        case .register, .login, .waitlistJoin, .waitlistVerify:
+        case .requestCode, .verifyCode, .register, .login, .waitlistJoin, .waitlistVerify:
             return false
         default:
             return true
@@ -156,7 +161,7 @@ nonisolated enum APIEndpoint: Sendable {
 
     var method: HTTPMethod {
         switch self {
-        case .register, .login, .uploadProfileImage,
+        case .requestCode, .verifyCode, .register, .login, .uploadProfileImage,
              .feedText, .feedImage, .feedVideo, .feedVideoUrl, .feedMusic,
              .createImagePost,
              .addToProfileList, .follow,

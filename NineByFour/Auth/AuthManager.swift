@@ -39,6 +39,46 @@ final class AuthManager {
     }
 
     @MainActor
+    func requestCode(email: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let body = RequestCodeBody(email: email)
+            try await APIClient.shared.requestVoid(endpoint: .requestCode, body: body)
+        } catch let error as APIError {
+            errorMessage = error.errorDescription
+        } catch {
+            errorMessage = "Could not send code. Try again."
+        }
+
+        isLoading = false
+    }
+
+    @MainActor
+    func verifyCode(email: String, code: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let body = VerifyCodeBody(email: email, code: code)
+            let response: LoginResponse = try await APIClient.shared.request(
+                endpoint: .verifyCode,
+                body: body
+            )
+            KeychainHelper.shared.saveToken(response.token)
+            currentUser = response.user
+            isAuthenticated = true
+        } catch let error as APIError {
+            errorMessage = error.errorDescription
+        } catch {
+            errorMessage = "Invalid or expired code."
+        }
+
+        isLoading = false
+    }
+
+    @MainActor
     func logout() {
         KeychainHelper.shared.deleteToken()
         currentUser = nil
@@ -62,4 +102,13 @@ final class AuthManager {
 private struct LoginBody: Encodable {
     let username: String
     let password: String
+}
+
+private struct RequestCodeBody: Encodable {
+    let email: String
+}
+
+private struct VerifyCodeBody: Encodable {
+    let email: String
+    let code: String
 }
