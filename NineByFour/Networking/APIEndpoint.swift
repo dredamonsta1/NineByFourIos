@@ -145,6 +145,15 @@ nonisolated enum APIEndpoint: Sendable {
         }
     }
 
+    var requiresAuth: Bool {
+        switch self {
+        case .register, .login, .waitlistJoin, .waitlistVerify:
+            return false
+        default:
+            return true
+        }
+    }
+
     var method: HTTPMethod {
         switch self {
         case .register, .login, .uploadProfileImage,
