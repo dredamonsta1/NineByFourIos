@@ -19,7 +19,7 @@ struct WaitlistView: View {
 
                     // Logo
                     VStack(spacing: 8) {
-                        Text("Vedioz")
+                        Text("stanbox")
                             .font(.system(size: 48, weight: .bold))
                             .foregroundStyle(Color.Theme.accent)
                         Text("Join the Waitlist")
@@ -51,7 +51,7 @@ struct WaitlistView: View {
 
     private var formView: some View {
         VStack(spacing: 16) {
-            Text("Vedioz is currently invite-only to ensure a high-quality community.")
+            Text("stanbox is currently invite-only to ensure a high-quality community.")
                 .font(.subheadline)
                 .foregroundStyle(Color.Theme.textSecondary)
                 .multilineTextAlignment(.center)
