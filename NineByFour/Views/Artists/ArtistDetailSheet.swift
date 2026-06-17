@@ -54,6 +54,27 @@ struct ArtistDetailSheet: View {
                                     }
                                 }
 
+                                // Artist "world" link-outs
+                                if hasWorldLinks(artist) {
+                                    FlowLayout(spacing: 8) {
+                                        if let url = nonEmptyURL(artist.websiteUrl) {
+                                            WorldLink(label: "Website", systemImage: "link", url: url)
+                                        }
+                                        if let url = nonEmptyURL(artist.merchUrl) {
+                                            WorldLink(label: "Shop", systemImage: "bag", url: url)
+                                        }
+                                        if let url = nonEmptyURL(artist.newsletterUrl) {
+                                            WorldLink(label: "Newsletter", systemImage: "envelope", url: url)
+                                        }
+                                        if let url = nonEmptyURL(artist.spotifyUrl) {
+                                            WorldLink(label: "Spotify", systemImage: "play.circle.fill", url: url, tint: Color.Theme.spotify)
+                                        }
+                                        if let url = nonEmptyURL(artist.appleMusicUrl) {
+                                            WorldLink(label: "Apple Music", systemImage: "applelogo", url: url, tint: Color.Theme.appleMusic)
+                                        }
+                                    }
+                                }
+
                                 // Clout button
                                 HStack(spacing: 8) {
                                     Button {
@@ -117,6 +138,45 @@ struct ArtistDetailSheet: View {
         }
     }
 
+    private func hasWorldLinks(_ artist: Artist) -> Bool {
+        nonEmptyURL(artist.websiteUrl) != nil
+            || nonEmptyURL(artist.merchUrl) != nil
+            || nonEmptyURL(artist.newsletterUrl) != nil
+            || nonEmptyURL(artist.spotifyUrl) != nil
+            || nonEmptyURL(artist.appleMusicUrl) != nil
+    }
+
+    private func nonEmptyURL(_ raw: String?) -> URL? {
+        guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return URL(string: raw)
+    }
+}
+
+// MARK: - World link-out pill
+
+private struct WorldLink: View {
+    let label: String
+    let systemImage: String
+    let url: URL
+    var tint: Color = Color.Theme.accent
+
+    var body: some View {
+        Link(destination: url) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage).font(.caption)
+                Text(label).font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color.Theme.bgCardElevated)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(tint.opacity(0.35), lineWidth: 1)
+            )
+            .cornerRadius(16)
+        }
+    }
 }
 
 // MARK: - Album Row (existing albums)
@@ -124,36 +184,83 @@ struct ArtistDetailSheet: View {
 private struct AlbumRow: View {
     let album: Album
 
+    private var spotifyURL: URL? {
+        guard let raw = album.spotifyUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return nil }
+        return URL(string: raw)
+    }
+
+    private var appleMusicURL: URL? {
+        guard let raw = album.appleMusicUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return nil }
+        return URL(string: raw)
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            CachedAsyncImage(url: album.albumImageUrl?.fullImageURL, cornerRadius: 6)
-                .frame(width: 50, height: 50)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                CachedAsyncImage(url: album.albumImageUrl?.fullImageURL, cornerRadius: 6)
+                    .frame(width: 50, height: 50)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(album.albumName)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.Theme.textPrimary)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(album.albumName)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.Theme.textPrimary)
+                        .lineLimit(1)
 
-                HStack(spacing: 8) {
-                    if let year = album.year, !year.isEmpty {
-                        Text(year)
-                            .font(.caption)
-                            .foregroundStyle(Color.Theme.textSecondary)
-                    }
-                    if let certs = album.certifications, !certs.isEmpty {
-                        Text(certs)
-                            .font(.caption)
-                            .foregroundStyle(Color.Theme.accent)
+                    HStack(spacing: 8) {
+                        if let year = album.year, !year.isEmpty {
+                            Text(year)
+                                .font(.caption)
+                                .foregroundStyle(Color.Theme.textSecondary)
+                        }
+                        if let certs = album.certifications, !certs.isEmpty {
+                            Text(certs)
+                                .font(.caption)
+                                .foregroundStyle(Color.Theme.accent)
+                        }
                     }
                 }
+
+                Spacer()
             }
 
-            Spacer()
+            if spotifyURL != nil || appleMusicURL != nil {
+                HStack(spacing: 8) {
+                    if let url = spotifyURL {
+                        AlbumLinkButton(label: "Spotify", systemImage: "play.circle.fill", url: url, tint: Color.Theme.spotify)
+                    }
+                    if let url = appleMusicURL {
+                        AlbumLinkButton(label: "Apple Music", systemImage: "applelogo", url: url, tint: Color.Theme.appleMusic)
+                    }
+                }
+                .padding(.leading, 62)
+            }
         }
         .padding(10)
         .background(Color.Theme.bgCard)
         .cornerRadius(8)
+    }
+}
+
+private struct AlbumLinkButton: View {
+    let label: String
+    let systemImage: String
+    let url: URL
+    let tint: Color
+
+    var body: some View {
+        Link(destination: url) {
+            HStack(spacing: 4) {
+                Image(systemName: systemImage).font(.caption2)
+                Text(label).font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(tint.opacity(0.12))
+            .cornerRadius(10)
+        }
     }
 }
 

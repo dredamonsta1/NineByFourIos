@@ -7,6 +7,8 @@ struct Album: Codable, Identifiable, Sendable {
     var year: String?
     var certifications: String?
     var albumImageUrl: String?
+    var spotifyUrl: String?
+    var appleMusicUrl: String?
 
     var id: Int { albumId }
 
@@ -17,6 +19,8 @@ struct Album: Codable, Identifiable, Sendable {
         case year
         case certifications
         case albumImageUrl = "album_image_url"
+        case spotifyUrl = "spotify_url"
+        case appleMusicUrl = "apple_music_url"
     }
 
     init(from decoder: Decoder) throws {
@@ -34,5 +38,7 @@ struct Album: Codable, Identifiable, Sendable {
 
         certifications = try container.decodeIfPresent(String.self, forKey: .certifications)
         albumImageUrl = try container.decodeIfPresent(String.self, forKey: .albumImageUrl)
+        spotifyUrl = try container.decodeIfPresent(String.self, forKey: .spotifyUrl)
+        appleMusicUrl = try container.decodeIfPresent(String.self, forKey: .appleMusicUrl)
     }
 }
