@@ -148,6 +148,11 @@ struct FeedPostCard: View {
 
 private struct MusicPostContent: View {
     let post: FeedPost
+    @Environment(AudioPlayer.self) private var audioPlayer
+
+    private var isActive: Bool {
+        audioPlayer.currentPost?.id == post.id
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -157,16 +162,31 @@ private struct MusicPostContent: View {
                     .foregroundStyle(Color.Theme.textPrimary)
             }
 
-            if let streamUrl = post.streamUrl, let url = URL(string: streamUrl) {
-                Link(destination: url) {
+            // Prefer in-app playback when audioUrl is present (raw playable
+            // file hosted on Cloudinary etc). Fall back to the platform deep
+            // link via streamUrl for posts that only reference Spotify /
+            // SoundCloud / Apple Music.
+            if let audioUrl = post.audioUrl, !audioUrl.isEmpty {
+                Button {
+                    if isActive {
+                        audioPlayer.togglePlayPause()
+                    } else {
+                        Task { await audioPlayer.play(post: post) }
+                    }
+                } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: platformIcon(for: post.platform))
+                        Image(systemName: isActive && audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.title3)
-                        Text("Listen on \(platformName(for: post.platform))")
+                        Text(isActive
+                             ? (audioPlayer.isPlaying ? "Playing…" : "Paused")
+                             : "Play")
                             .font(.subheadline.bold())
                         Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption)
+                        if isActive && audioPlayer.isLoading {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(Color.Theme.accent)
+                        }
                     }
                     .padding(12)
                     .background(Color.Theme.bgInput)
@@ -177,12 +197,13 @@ private struct MusicPostContent: View {
                             .stroke(Color.Theme.borderDefault, lineWidth: 1)
                     )
                 }
-            } else if let audioUrl = post.audioUrl, let url = URL(string: audioUrl) {
+                .buttonStyle(.plain)
+            } else if let streamUrl = post.streamUrl, let url = URL(string: streamUrl) {
                 Link(destination: url) {
                     HStack(spacing: 8) {
-                        Image(systemName: "waveform")
+                        Image(systemName: platformIcon(for: post.platform))
                             .font(.title3)
-                        Text("Listen")
+                        Text("Listen on \(platformName(for: post.platform))")
                             .font(.subheadline.bold())
                         Spacer()
                         Image(systemName: "arrow.up.right")
