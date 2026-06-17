@@ -10,6 +10,11 @@ struct Artist: Codable, Identifiable, Sendable {
     var region: String?
     var label: String?
     var imageUrl: String?
+    var websiteUrl: String?
+    var merchUrl: String?
+    var newsletterUrl: String?
+    var spotifyUrl: String?
+    var appleMusicUrl: String?
     var albums: [Album]?
 
     var id: Int { artistId }
@@ -24,6 +29,11 @@ struct Artist: Codable, Identifiable, Sendable {
         case region
         case label
         case imageUrl = "image_url"
+        case websiteUrl = "website_url"
+        case merchUrl = "merch_url"
+        case newsletterUrl = "newsletter_url"
+        case spotifyUrl = "spotify_url"
+        case appleMusicUrl = "apple_music_url"
         case albums
     }
 }

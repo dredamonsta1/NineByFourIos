@@ -35,5 +35,9 @@ extension Color {
 
         // Border
         static let borderDefault = Color(hex: 0x1E3450)
+
+        // Brand link-outs
+        static let spotify = Color(hex: 0x1DB954)
+        static let appleMusic = Color(hex: 0xFA243C)
     }
 }
