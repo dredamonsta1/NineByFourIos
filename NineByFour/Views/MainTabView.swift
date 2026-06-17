@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var messagesViewModel = MessagesViewModel()
+    @Environment(AudioPlayer.self) private var audioPlayer
 
     var body: some View {
         TabView {
@@ -32,5 +33,10 @@ struct MainTabView: View {
                 }
         }
         .tint(Color.Theme.accent)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if audioPlayer.currentPost != nil {
+                PlayerBar()
+            }
+        }
     }
 }
