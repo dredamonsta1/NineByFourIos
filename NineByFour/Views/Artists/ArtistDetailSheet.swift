@@ -75,7 +75,7 @@ struct ArtistDetailSheet: View {
                                     }
                                 }
 
-                                // Clout button
+                                // Clout + Top 20 buttons
                                 HStack(spacing: 8) {
                                     Button {
                                         Task { await viewModel.toggleClout(isAuthenticated: authManager.isAuthenticated) }
@@ -94,6 +94,10 @@ struct ArtistDetailSheet: View {
                                             RoundedRectangle(cornerRadius: 20)
                                                 .stroke(Color.Theme.hot, lineWidth: viewModel.hasClout ? 0 : 1)
                                         )
+                                    }
+
+                                    if authManager.isAuthenticated {
+                                        TopTwentyButton(viewModel: viewModel, isAuthenticated: authManager.isAuthenticated)
                                     }
 
                                     Spacer()
@@ -150,6 +154,78 @@ struct ArtistDetailSheet: View {
         guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         return URL(string: raw)
     }
+}
+
+// MARK: - Top 20 pill button
+
+private struct TopTwentyButton: View {
+    @Bindable var viewModel: ArtistDetailViewModel
+    let isAuthenticated: Bool
+
+    private enum State { case add, added, full }
+
+    private var state: State {
+        if viewModel.isInProfileList { return .added }
+        if viewModel.isProfileListFull { return .full }
+        return .add
+    }
+
+    var body: some View {
+        Button {
+            guard state == .add else { return }
+            Task { await viewModel.addToProfileList(isAuthenticated: isAuthenticated) }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: iconName)
+                Text(label)
+            }
+            .font(.subheadline.bold())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(background)
+            .foregroundStyle(foreground)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(strokeColor, lineWidth: state == .add ? 1 : 0)
+            )
+        }
+        .disabled(state != .add || viewModel.isAddingToProfileList)
+    }
+
+    private var iconName: String {
+        switch state {
+        case .add: return "plus"
+        case .added: return "checkmark"
+        case .full: return "circle.slash"
+        }
+    }
+
+    private var label: String {
+        switch state {
+        case .add: return "Top 20"
+        case .added: return "In Top 20"
+        case .full: return "Top 20 Full"
+        }
+    }
+
+    private var background: Color {
+        switch state {
+        case .add: return .clear
+        case .added: return Color.Theme.accent
+        case .full: return Color.Theme.bgCardElevated
+        }
+    }
+
+    private var foreground: Color {
+        switch state {
+        case .add: return Color.Theme.accent
+        case .added: return .white
+        case .full: return Color.Theme.textSecondary
+        }
+    }
+
+    private var strokeColor: Color { Color.Theme.accent }
 }
 
 // MARK: - World link-out pill
