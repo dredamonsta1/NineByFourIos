@@ -26,6 +26,9 @@ nonisolated enum APIEndpoint: Sendable {
     case clout(id: Int)
     case removeClout(id: Int)
 
+    // MARK: - Albums (Pillar B commerce)
+    case albumCheckout(id: Int)
+
     // MARK: - Feed
     case feed
     case feedText
@@ -97,6 +100,9 @@ nonisolated enum APIEndpoint: Sendable {
         case .clout(let id): return "/artists/\(id)/clout"
         case .removeClout(let id): return "/artists/\(id)/clout/remove"
 
+        // Albums
+        case .albumCheckout(let id): return "/albums/\(id)/checkout"
+
         // Feed
         case .feed: return "/feed"
         case .feedText: return "/feed/text"
@@ -166,6 +172,7 @@ nonisolated enum APIEndpoint: Sendable {
         case .requestCode, .verifyCode, .register, .login, .uploadProfileImage,
              .feedText, .feedImage, .feedVideo, .feedVideoUrl, .feedMusic,
              .createImagePost,
+             .albumCheckout,
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
              .waitlistJoin, .waitlistVerify, .createEvent:

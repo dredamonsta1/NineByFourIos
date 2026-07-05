@@ -86,3 +86,15 @@ struct Purchase: Codable, Identifiable, Sendable {
 struct PurchasesResponse: Codable, Sendable {
     let purchases: [Purchase]
 }
+
+// Return payload from POST /albums/:id/checkout. `checkout_url` is the
+// Stripe-hosted page we open in SFSafariViewController.
+struct AlbumCheckoutResponse: Codable, Sendable {
+    let checkoutUrl: String
+    let sessionId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case checkoutUrl = "checkout_url"
+        case sessionId = "session_id"
+    }
+}
