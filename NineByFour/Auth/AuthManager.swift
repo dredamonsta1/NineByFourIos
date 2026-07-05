@@ -7,6 +7,16 @@ final class AuthManager {
     var isAuthenticated = false
     var isLoading = false
     var errorMessage: String?
+    // Pillar B fan library. Loaded on hydration + login, cleared on logout.
+    // Read by AlbumBuyButton to detect ownership so bought albums flip to
+    // "Download" instead of showing a Buy CTA.
+    var purchases: [Purchase] = []
+
+    private var purchasedAlbumIds: Set<Int> = []
+
+    func hasPurchased(albumId: Int) -> Bool {
+        purchasedAlbumIds.contains(albumId)
+    }
 
     init() {
         if KeychainHelper.shared.getToken() != nil {
@@ -29,6 +39,7 @@ final class AuthManager {
             KeychainHelper.shared.saveToken(response.token)
             currentUser = response.user
             isAuthenticated = true
+            await loadPurchases()
         } catch let error as APIError {
             errorMessage = error.errorDescription
         } catch {
@@ -69,6 +80,7 @@ final class AuthManager {
             KeychainHelper.shared.saveToken(response.token)
             currentUser = response.user
             isAuthenticated = true
+            await loadPurchases()
         } catch let error as APIError {
             errorMessage = error.errorDescription
         } catch {
@@ -82,6 +94,8 @@ final class AuthManager {
         currentUser = nil
         isAuthenticated = false
         errorMessage = nil
+        purchases = []
+        purchasedAlbumIds = []
     }
 
     @MainActor
@@ -90,9 +104,22 @@ final class AuthManager {
             let user: User = try await APIClient.shared.request(endpoint: .me)
             currentUser = user
             isAuthenticated = true
+            await loadPurchases()
         } catch {
             // Token is invalid or expired
             logout()
+        }
+    }
+
+    @MainActor
+    func loadPurchases() async {
+        do {
+            let response: PurchasesResponse = try await APIClient.shared.request(endpoint: .mePurchases)
+            purchases = response.purchases
+            purchasedAlbumIds = Set(response.purchases.map(\.albumId))
+        } catch {
+            // Silently fail — a stale library beats a crash. Refresh happens
+            // next time verifyCode or loadCurrentUser runs.
         }
     }
 }

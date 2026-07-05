@@ -18,6 +18,7 @@ nonisolated enum APIEndpoint: Sendable {
     case me
     case userProfile(userId: Int)
     case uploadProfileImage
+    case mePurchases
 
     // MARK: - Artists (read-only on iOS — artist-side management is web)
     case artists
@@ -88,6 +89,7 @@ nonisolated enum APIEndpoint: Sendable {
         case .me: return "/users/me"
         case .userProfile(let userId): return "/users/\(userId)/profile"
         case .uploadProfileImage: return "/users/profile-image"
+        case .mePurchases: return "/users/me/purchases"
 
         // Artists
         case .artists: return "/artists"
