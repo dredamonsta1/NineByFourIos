@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 
 struct ArtistDetailSheet: View {
     let artistId: Int
@@ -343,7 +344,11 @@ private struct AlbumBuyButton: View {
     let authManager: AuthManager
 
     @State private var isAddingToList = false
-    @State private var showBuyStubAlert = false
+    @State private var isStartingCheckout = false
+    @State private var checkoutSession: CheckoutSession?
+    @State private var checkoutError: String?
+    @State private var showCheckoutError = false
+    @State private var justPurchased = false
 
     private var priceLabel: String {
         guard let cents = album.priceCents else { return "" }
@@ -386,11 +391,34 @@ private struct AlbumBuyButton: View {
             )
             .cornerRadius(10)
         }
-        .disabled(state == .top20Full || isAddingToList)
-        .alert("Web checkout coming soon", isPresented: $showBuyStubAlert) {
+        .disabled(state == .top20Full || isAddingToList || isStartingCheckout)
+        .fullScreenCover(
+            item: $checkoutSession,
+            onDismiss: {
+                // User closed Safari (Done button). Refresh purchases —
+                // if they completed the buy, the button flips to Owned.
+                Task {
+                    let before = authManager.hasPurchased(albumId: album.albumId)
+                    await authManager.loadPurchases()
+                    let after = authManager.hasPurchased(albumId: album.albumId)
+                    if !before && after { justPurchased = true }
+                }
+            }
+        ) { session in
+            SafariView(url: session.url) {
+                checkoutSession = nil
+            }
+            .ignoresSafeArea()
+        }
+        .alert("Couldn't start checkout", isPresented: $showCheckoutError) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Stripe Checkout in-app opens in the next update. Meanwhile you can buy this album on stanbox.com.")
+            Text(checkoutError ?? "Something went wrong. Try again.")
+        }
+        .alert("Thanks for the support", isPresented: $justPurchased) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("\(album.albumName) is now in your library.")
         }
     }
 
@@ -410,7 +438,10 @@ private struct AlbumBuyButton: View {
         case .owned: return "Owned — open in Library"
         case .addToTop20: return "Add to your Top 20 to unlock \(priceLabel)"
         case .top20Full: return "Top 20 full — manage in profile"
-        case .buy: return isAddingToList ? "Adding…" : "Buy \(priceLabel)"
+        case .buy:
+            if isStartingCheckout { return "Opening…" }
+            if isAddingToList { return "Adding…" }
+            return "Buy \(priceLabel)"
         }
     }
 
@@ -453,9 +484,74 @@ private struct AlbumBuyButton: View {
                 isAddingToList = false
             }
         case .buy:
-            // TODO(iOS v1 Phase 5 slice 3): open webview to
-            // POST /albums/:id/checkout → Stripe Checkout URL, return to app.
-            showBuyStubAlert = true
+            Task { await startCheckout() }
+        }
+    }
+
+    @MainActor
+    private func startCheckout() async {
+        guard !isStartingCheckout else { return }
+        isStartingCheckout = true
+        defer { isStartingCheckout = false }
+
+        do {
+            let response: AlbumCheckoutResponse = try await APIClient.shared.request(
+                endpoint: .albumCheckout(id: album.albumId)
+            )
+            guard let url = URL(string: response.checkoutUrl) else {
+                checkoutError = "Received an invalid checkout link."
+                showCheckoutError = true
+                return
+            }
+            checkoutSession = CheckoutSession(url: url)
+        } catch let error as APIError {
+            checkoutError = error.errorDescription
+            showCheckoutError = true
+        } catch {
+            checkoutError = "Couldn't reach Stripe. Check your connection and try again."
+            showCheckoutError = true
+        }
+    }
+}
+
+// Wraps a URL so .fullScreenCover(item:) can identify presentation sessions.
+// The UUID keeps every open distinct — even if the same album is bought,
+// cancelled, then re-opened the sheet re-presents cleanly.
+private struct CheckoutSession: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+// SFSafariViewController wrapper. Uses Apple's shared browser view so we
+// inherit cookies, autofill, and Apple Pay from Safari — the polished
+// path for a Stripe Checkout round-trip. `onFinish` fires when the user
+// taps Done in the Safari chrome; the parent view uses it to dismiss the
+// SwiftUI cover, which in turn fires .onDismiss to refresh purchases.
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+    let onFinish: () -> Void
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let config = SFSafariViewController.Configuration()
+        config.entersReaderIfAvailable = false
+        config.barCollapsingEnabled = true
+        let vc = SFSafariViewController(url: url, configuration: config)
+        vc.delegate = context.coordinator
+        vc.dismissButtonStyle = .close
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onFinish: onFinish)
+    }
+
+    final class Coordinator: NSObject, SFSafariViewControllerDelegate {
+        let onFinish: () -> Void
+        init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
+        func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+            onFinish()
         }
     }
 }
