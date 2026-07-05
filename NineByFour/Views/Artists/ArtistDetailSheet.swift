@@ -113,7 +113,11 @@ struct ArtistDetailSheet: View {
 
                                     LazyVStack(spacing: 10) {
                                         ForEach(albums) { album in
-                                            AlbumRow(album: album)
+                                            AlbumRow(
+                                                album: album,
+                                                viewModel: viewModel,
+                                                authManager: authManager
+                                            )
                                         }
                                     }
                                 }
@@ -259,6 +263,8 @@ private struct WorldLink: View {
 
 private struct AlbumRow: View {
     let album: Album
+    @Bindable var viewModel: ArtistDetailViewModel
+    let authManager: AuthManager
 
     private var spotifyURL: URL? {
         guard let raw = album.spotifyUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -312,10 +318,145 @@ private struct AlbumRow: View {
                 }
                 .padding(.leading, 62)
             }
+
+            if album.isOnSale {
+                AlbumBuyButton(album: album, viewModel: viewModel, authManager: authManager)
+                    .padding(.leading, 62)
+                    .padding(.top, 2)
+            }
         }
         .padding(10)
         .background(Color.Theme.bgCard)
         .cornerRadius(8)
+    }
+}
+
+// MARK: - Album Buy Button (Pillar B commerce)
+//
+// UI-only slice: "Add to Top 20 to unlock" wires up via the existing
+// add-to-profile-list action. "Buy $X.XX" shows a placeholder alert
+// until the webview Stripe Checkout lands in iOS v1 Phase 5 slice 3.
+
+private struct AlbumBuyButton: View {
+    let album: Album
+    @Bindable var viewModel: ArtistDetailViewModel
+    let authManager: AuthManager
+
+    @State private var isAddingToList = false
+    @State private var showBuyStubAlert = false
+
+    private var priceLabel: String {
+        guard let cents = album.priceCents else { return "" }
+        return String(format: "$%.2f", Double(cents) / 100.0)
+    }
+
+    private enum ButtonState {
+        case signIn
+        case owned
+        case addToTop20
+        case top20Full
+        case buy
+    }
+
+    private var state: ButtonState {
+        if !authManager.isAuthenticated { return .signIn }
+        if authManager.hasPurchased(albumId: album.albumId) { return .owned }
+        if viewModel.isInProfileList { return .buy }
+        if viewModel.isProfileListFull { return .top20Full }
+        return .addToTop20
+    }
+
+    var body: some View {
+        Button(action: handleTap) {
+            HStack(spacing: 6) {
+                Image(systemName: iconName)
+                Text(labelText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .font(.caption.bold())
+            .foregroundStyle(foreground)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(background)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(strokeColor, lineWidth: showsBorder ? 1 : 0)
+            )
+            .cornerRadius(10)
+        }
+        .disabled(state == .top20Full || isAddingToList)
+        .alert("Web checkout coming soon", isPresented: $showBuyStubAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Stripe Checkout in-app opens in the next update. Meanwhile you can buy this album on stanbox.com.")
+        }
+    }
+
+    private var iconName: String {
+        switch state {
+        case .signIn: return "person.crop.circle"
+        case .owned: return "arrow.down.circle.fill"
+        case .addToTop20: return "star.circle"
+        case .top20Full: return "circle.slash"
+        case .buy: return "cart.fill"
+        }
+    }
+
+    private var labelText: String {
+        switch state {
+        case .signIn: return "Sign in to buy \(priceLabel)"
+        case .owned: return "Owned — open in Library"
+        case .addToTop20: return "Add to your Top 20 to unlock \(priceLabel)"
+        case .top20Full: return "Top 20 full — manage in profile"
+        case .buy: return isAddingToList ? "Adding…" : "Buy \(priceLabel)"
+        }
+    }
+
+    private var foreground: Color {
+        switch state {
+        case .signIn: return Color.Theme.accent
+        case .owned: return .white
+        case .addToTop20: return Color.Theme.accent
+        case .top20Full: return Color.Theme.textSecondary
+        case .buy: return .white
+        }
+    }
+
+    private var background: Color {
+        switch state {
+        case .signIn, .addToTop20: return .clear
+        case .owned: return Color.Theme.accent
+        case .top20Full: return Color.Theme.bgCardElevated
+        case .buy: return Color.Theme.accent
+        }
+    }
+
+    private var showsBorder: Bool {
+        state == .signIn || state == .addToTop20
+    }
+
+    private var strokeColor: Color { Color.Theme.accent }
+
+    private func handleTap() {
+        switch state {
+        case .signIn, .top20Full:
+            break
+        case .owned:
+            // TODO(iOS v1 Phase 5 slice 5): route to LibraryTab and scroll to album.
+            break
+        case .addToTop20:
+            Task {
+                isAddingToList = true
+                await viewModel.addToProfileList(isAuthenticated: authManager.isAuthenticated)
+                isAddingToList = false
+            }
+        case .buy:
+            // TODO(iOS v1 Phase 5 slice 3): open webview to
+            // POST /albums/:id/checkout → Stripe Checkout URL, return to app.
+            showBuyStubAlert = true
+        }
     }
 }
 

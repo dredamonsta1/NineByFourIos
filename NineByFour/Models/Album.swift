@@ -9,8 +9,19 @@ struct Album: Codable, Identifiable, Sendable {
     var albumImageUrl: String?
     var spotifyUrl: String?
     var appleMusicUrl: String?
+    // Pillar B commerce fields. Present on every album row but null for
+    // most; the trio must all be non-null for an album to be "on sale".
+    var priceCents: Int?
+    var downloadEnabled: Bool?
+    var audioCloudinaryPublicId: String?
 
     var id: Int { albumId }
+
+    var isOnSale: Bool {
+        (priceCents ?? 0) > 0
+            && (downloadEnabled ?? false)
+            && !(audioCloudinaryPublicId?.isEmpty ?? true)
+    }
 
     enum CodingKeys: String, CodingKey {
         case albumId = "album_id"
@@ -21,6 +32,9 @@ struct Album: Codable, Identifiable, Sendable {
         case albumImageUrl = "album_image_url"
         case spotifyUrl = "spotify_url"
         case appleMusicUrl = "apple_music_url"
+        case priceCents = "price_cents"
+        case downloadEnabled = "download_enabled"
+        case audioCloudinaryPublicId = "audio_cloudinary_public_id"
     }
 
     init(from decoder: Decoder) throws {
@@ -40,5 +54,35 @@ struct Album: Codable, Identifiable, Sendable {
         albumImageUrl = try container.decodeIfPresent(String.self, forKey: .albumImageUrl)
         spotifyUrl = try container.decodeIfPresent(String.self, forKey: .spotifyUrl)
         appleMusicUrl = try container.decodeIfPresent(String.self, forKey: .appleMusicUrl)
+        priceCents = try container.decodeIfPresent(Int.self, forKey: .priceCents)
+        downloadEnabled = try container.decodeIfPresent(Bool.self, forKey: .downloadEnabled)
+        audioCloudinaryPublicId = try container.decodeIfPresent(String.self, forKey: .audioCloudinaryPublicId)
     }
+}
+
+// Fan's owned album (Pillar B). Returned by GET /users/me/purchases.
+struct Purchase: Codable, Identifiable, Sendable {
+    let id: Int
+    let albumId: Int
+    let artistId: Int
+    let amountCents: Int?
+    let createdAt: String?
+    let albumName: String?
+    let artistName: String?
+    let albumImageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case albumId = "album_id"
+        case artistId = "artist_id"
+        case amountCents = "amount_cents"
+        case createdAt = "created_at"
+        case albumName = "album_name"
+        case artistName = "artist_name"
+        case albumImageUrl = "album_image_url"
+    }
+}
+
+struct PurchasesResponse: Codable, Sendable {
+    let purchases: [Purchase]
 }
