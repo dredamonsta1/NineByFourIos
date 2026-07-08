@@ -48,7 +48,7 @@ struct MainTabView: View {
         }
         .tint(Color.Theme.accent)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if audioPlayer.currentPost != nil {
+            if audioPlayer.currentTrack != nil {
                 PlayerBar()
             }
         }

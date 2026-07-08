@@ -8,7 +8,7 @@ import Observation
 final class AudioPlayer {
     // MARK: - Published state
 
-    private(set) var currentPost: FeedPost?
+    private(set) var currentTrack: NowPlayingTrack?
     private(set) var isPlaying = false
     private(set) var isLoading = false
     private(set) var fftBars: [Float] = Array(repeating: 0, count: FFTAnalyzer.barCount)
@@ -31,20 +31,27 @@ final class AudioPlayer {
 
     // MARK: - Public API
 
+    // Convenience for the feed path. Builds a NowPlayingTrack from a
+    // music FeedPost and hands off. No-op if the post has no audioUrl.
     func play(post: FeedPost) async {
-        guard let urlString = post.audioUrl, let url = URL(string: urlString) else {
+        guard let track = post.nowPlayingTrack else {
             errorMessage = "This post has no playable audio."
             return
         }
+        await play(track: track)
+    }
 
+    // Canonical playback entry point. All sources (feed music post, library
+    // album, preview clip) route through here.
+    func play(track: NowPlayingTrack) async {
         await stop()
 
         isLoading = true
         errorMessage = nil
-        currentPost = post
+        currentTrack = track
 
         do {
-            let localURL = try await download(url)
+            let localURL = try await download(track.audioUrl)
             cachedFile = localURL
             try configureSessionIfNeeded()
             try startPlayback(of: localURL)
@@ -52,14 +59,14 @@ final class AudioPlayer {
             updateNowPlaying()
         } catch {
             errorMessage = "Could not play this track."
-            currentPost = nil
+            currentTrack = nil
         }
 
         isLoading = false
     }
 
     func togglePlayPause() {
-        guard currentPost != nil else { return }
+        guard currentTrack != nil else { return }
         if isPlaying {
             playerNode.pause()
             isPlaying = false
@@ -87,7 +94,7 @@ final class AudioPlayer {
         audioFile = nil
         if let cachedFile { try? FileManager.default.removeItem(at: cachedFile) }
         cachedFile = nil
-        currentPost = nil
+        currentTrack = nil
         isPlaying = false
         fftBars = Array(repeating: 0, count: FFTAnalyzer.barCount)
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
@@ -168,13 +175,13 @@ final class AudioPlayer {
     // MARK: - Now Playing
 
     private func updateNowPlaying() {
-        guard let post = currentPost else {
+        guard let track = currentTrack else {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
             return
         }
         var info: [String: Any] = [:]
-        info[MPMediaItemPropertyTitle] = post.musicTitle ?? "Music post"
-        info[MPMediaItemPropertyArtist] = post.username ?? ""
+        info[MPMediaItemPropertyTitle] = track.title
+        info[MPMediaItemPropertyArtist] = track.subtitle ?? ""
         info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }

@@ -4,18 +4,18 @@ struct PlayerBar: View {
     @Environment(AudioPlayer.self) private var player
 
     var body: some View {
-        if let post = player.currentPost {
+        if let track = player.currentTrack {
             HStack(spacing: 12) {
                 FrequencyVisualizer(bars: player.fftBars, tint: Color.Theme.accent)
                     .frame(width: 56, height: 32)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(post.musicTitle ?? "Music post")
+                    Text(track.title)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.Theme.textPrimary)
                         .lineLimit(1)
-                    if let username = post.username {
-                        Text(username)
+                    if let subtitle = track.subtitle {
+                        Text(subtitle)
                             .font(.caption2)
                             .foregroundStyle(Color.Theme.textSecondary)
                             .lineLimit(1)
