@@ -28,6 +28,7 @@ nonisolated enum APIEndpoint: Sendable {
 
     // MARK: - Albums (Pillar B commerce)
     case albumCheckout(id: Int)
+    case albumStream(id: Int)
 
     // MARK: - Feed
     case feed
@@ -102,6 +103,7 @@ nonisolated enum APIEndpoint: Sendable {
 
         // Albums
         case .albumCheckout(let id): return "/albums/\(id)/checkout"
+        case .albumStream(let id): return "/albums/\(id)/stream"
 
         // Feed
         case .feed: return "/feed"
