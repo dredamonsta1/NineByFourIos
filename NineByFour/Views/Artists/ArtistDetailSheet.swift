@@ -342,6 +342,8 @@ private struct AlbumBuyButton: View {
     let album: Album
     @Bindable var viewModel: ArtistDetailViewModel
     let authManager: AuthManager
+    @Environment(Router.self) private var router
+    @Environment(\.dismiss) private var dismiss
 
     @State private var isAddingToList = false
     @State private var isStartingCheckout = false
@@ -460,8 +462,10 @@ private struct AlbumBuyButton: View {
         case .signIn, .top20Full:
             break
         case .owned:
-            // TODO(iOS v1 Phase 5 slice 5): route to LibraryTab and scroll to album.
-            break
+            // Switch to the Library tab, then close the artist sheet so
+            // the fan lands directly on their purchases.
+            router.openLibrary()
+            dismiss()
         case .addToTop20:
             Task {
                 isAddingToList = true
