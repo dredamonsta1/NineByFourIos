@@ -308,8 +308,12 @@ private struct AlbumRow: View {
                 Spacer()
             }
 
-            if spotifyURL != nil || appleMusicURL != nil {
+            let hasPreview = !(album.audioCloudinaryPublicId?.isEmpty ?? true)
+            if spotifyURL != nil || appleMusicURL != nil || hasPreview {
                 HStack(spacing: 8) {
+                    if hasPreview {
+                        AlbumPreviewButton(album: album)
+                    }
                     if let url = spotifyURL {
                         AlbumLinkButton(label: "Spotify", systemImage: "play.circle.fill", url: url, tint: Color.Theme.spotify)
                     }
@@ -575,6 +579,103 @@ private final class WebAuthAnchorProvider: NSObject, ASWebAuthenticationPresenta
             .flatMap(\.windows)
             .first(where: \.isKeyWindow)
             ?? ASPresentationAnchor()
+    }
+}
+
+// Public 30s preview clip. Wires directly into the shared AudioPlayer,
+// so PlayerBar + lockscreen light up the same way as a paid stream —
+// only difference is the source URL and the "preview-<id>" track ID.
+private struct AlbumPreviewButton: View {
+    let album: Album
+    @Environment(AudioPlayer.self) private var audioPlayer
+    @State private var isFetching = false
+    @State private var previewError: String?
+    @State private var showPreviewError = false
+
+    private var trackId: String { "preview-\(album.albumId)" }
+    private var isActive: Bool { audioPlayer.currentTrack?.id == trackId }
+    private var isBusy: Bool { isFetching || (isActive && audioPlayer.isLoading) }
+
+    var body: some View {
+        Button(action: handleTap) {
+            HStack(spacing: 4) {
+                if isBusy {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Color.Theme.accent)
+                        .frame(width: 12, height: 12)
+                } else {
+                    Image(systemName: iconName).font(.caption2)
+                }
+                Text(labelText).font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(Color.Theme.accent)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.Theme.accent.opacity(0.12))
+            .cornerRadius(10)
+        }
+        .buttonStyle(.plain)
+        .disabled(isBusy)
+        .alert("Preview unavailable", isPresented: $showPreviewError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(previewError ?? "Try again in a moment.")
+        }
+    }
+
+    private var iconName: String {
+        if isActive {
+            return audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill"
+        }
+        return "play.circle.fill"
+    }
+
+    private var labelText: String {
+        if isActive {
+            return audioPlayer.isPlaying ? "Playing" : "Paused"
+        }
+        return "Preview"
+    }
+
+    private func handleTap() {
+        if isActive {
+            audioPlayer.togglePlayPause()
+            return
+        }
+        Task { await startPreview() }
+    }
+
+    @MainActor
+    private func startPreview() async {
+        guard !isFetching else { return }
+        isFetching = true
+        defer { isFetching = false }
+
+        do {
+            let response: AlbumPreviewResponse = try await APIClient.shared.request(
+                endpoint: .albumPreview(id: album.albumId)
+            )
+            guard let url = URL(string: response.url) else {
+                previewError = "The preview link came back malformed."
+                showPreviewError = true
+                return
+            }
+            let track = NowPlayingTrack(
+                id: trackId,
+                title: (response.albumName ?? album.albumName) + " · Preview",
+                subtitle: nil,
+                artworkUrl: response.albumImageUrl ?? album.albumImageUrl,
+                audioUrl: url
+            )
+            await audioPlayer.play(track: track)
+        } catch let error as APIError {
+            previewError = error.errorDescription
+            showPreviewError = true
+        } catch {
+            previewError = "Couldn't fetch the preview. Check your connection."
+            showPreviewError = true
+        }
     }
 }
 
