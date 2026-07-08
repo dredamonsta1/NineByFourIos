@@ -151,7 +151,7 @@ private struct MusicPostContent: View {
     @Environment(AudioPlayer.self) private var audioPlayer
 
     private var isActive: Bool {
-        audioPlayer.currentPost?.id == post.id
+        audioPlayer.currentTrack?.id == "feed-post-\(post.id)"
     }
 
     var body: some View {
