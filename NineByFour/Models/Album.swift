@@ -70,6 +70,8 @@ struct Purchase: Codable, Identifiable, Sendable {
     let albumName: String?
     let artistName: String?
     let albumImageUrl: String?
+    let artistImageUrl: String?
+    let year: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -80,6 +82,27 @@ struct Purchase: Codable, Identifiable, Sendable {
         case albumName = "album_name"
         case artistName = "artist_name"
         case albumImageUrl = "album_image_url"
+        case artistImageUrl = "artist_image_url"
+        case year
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        albumId = try container.decode(Int.self, forKey: .albumId)
+        artistId = try container.decode(Int.self, forKey: .artistId)
+        amountCents = try container.decodeIfPresent(Int.self, forKey: .amountCents)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        albumName = try container.decodeIfPresent(String.self, forKey: .albumName)
+        artistName = try container.decodeIfPresent(String.self, forKey: .artistName)
+        albumImageUrl = try container.decodeIfPresent(String.self, forKey: .albumImageUrl)
+        artistImageUrl = try container.decodeIfPresent(String.self, forKey: .artistImageUrl)
+        // year comes as Int from Postgres
+        if let intYear = try? container.decodeIfPresent(Int.self, forKey: .year) {
+            year = String(intYear)
+        } else {
+            year = try container.decodeIfPresent(String.self, forKey: .year)
+        }
     }
 }
 
