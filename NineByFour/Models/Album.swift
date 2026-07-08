@@ -144,3 +144,26 @@ struct AlbumStreamResponse: Codable, Sendable {
         case expiresAt = "expires_at"
     }
 }
+
+// Return payload from GET /albums/:id/preview. Public — no auth, no
+// ownership check. Cloudinary's so_0,eo_30 transformation is baked
+// into the signed URL, so it always plays exactly 30 seconds.
+struct AlbumPreviewResponse: Codable, Sendable {
+    let albumId: Int
+    let albumName: String?
+    let artistId: Int?
+    let albumImageUrl: String?
+    let sourceTrackId: Int?
+    let url: String
+    let format: String?
+
+    enum CodingKeys: String, CodingKey {
+        case albumId = "album_id"
+        case albumName = "album_name"
+        case artistId = "artist_id"
+        case albumImageUrl = "album_image_url"
+        case sourceTrackId = "source_track_id"
+        case url
+        case format
+    }
+}

@@ -29,6 +29,7 @@ nonisolated enum APIEndpoint: Sendable {
     // MARK: - Albums (Pillar B commerce)
     case albumCheckout(id: Int)
     case albumStream(id: Int)
+    case albumPreview(id: Int)
 
     // MARK: - Feed
     case feed
@@ -104,6 +105,7 @@ nonisolated enum APIEndpoint: Sendable {
         // Albums
         case .albumCheckout(let id): return "/albums/\(id)/checkout"
         case .albumStream(let id): return "/albums/\(id)/stream"
+        case .albumPreview(let id): return "/albums/\(id)/preview"
 
         // Feed
         case .feed: return "/feed"
@@ -162,7 +164,8 @@ nonisolated enum APIEndpoint: Sendable {
 
     var requiresAuth: Bool {
         switch self {
-        case .requestCode, .verifyCode, .register, .login, .waitlistJoin, .waitlistVerify:
+        case .requestCode, .verifyCode, .register, .login, .waitlistJoin, .waitlistVerify,
+             .albumPreview:
             return false
         default:
             return true
