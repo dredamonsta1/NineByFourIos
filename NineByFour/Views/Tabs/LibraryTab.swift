@@ -116,6 +116,14 @@ private struct LibraryArtistHeader: View {
 
 private struct LibraryAlbumRow: View {
     let purchase: Purchase
+    @Environment(AudioPlayer.self) private var audioPlayer
+    @State private var isFetchingStream = false
+    @State private var streamError: String?
+    @State private var showStreamError = false
+
+    private var trackId: String { "album-\(purchase.albumId)" }
+    private var isActive: Bool { audioPlayer.currentTrack?.id == trackId }
+    private var isBusy: Bool { isFetchingStream || (isActive && audioPlayer.isLoading) }
 
     private var purchasedAt: String? {
         guard let raw = purchase.createdAt,
@@ -153,17 +161,78 @@ private struct LibraryAlbumRow: View {
 
             Spacer()
 
-            // Downloads + in-app playback land in Phase 6. For now the row
-            // just shows the purchase — tapping the album cover on the
-            // artist page still routes to the sheet where you can play
-            // preview tracks.
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(Color.Theme.textSecondary)
+            Button(action: handleTap) {
+                if isBusy {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Color.Theme.accent)
+                        .frame(width: 36, height: 36)
+                } else {
+                    Image(systemName: playIconName)
+                        .font(.title2)
+                        .foregroundStyle(Color.Theme.accent)
+                        .frame(width: 36, height: 36)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(isBusy)
         }
         .padding(10)
         .background(Color.Theme.bgCard)
         .cornerRadius(8)
+        .alert("Couldn't start playback", isPresented: $showStreamError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(streamError ?? "Try again in a moment.")
+        }
+    }
+
+    private var playIconName: String {
+        if isActive {
+            return audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill"
+        }
+        return "play.circle.fill"
+    }
+
+    private func handleTap() {
+        if isActive {
+            audioPlayer.togglePlayPause()
+            return
+        }
+        Task { await startPlayback() }
+    }
+
+    @MainActor
+    private func startPlayback() async {
+        guard !isFetchingStream else { return }
+        isFetchingStream = true
+        defer { isFetchingStream = false }
+
+        do {
+            // Signed stream URLs are short-lived — fetch per play session.
+            let response: AlbumStreamResponse = try await APIClient.shared.request(
+                endpoint: .albumStream(id: purchase.albumId)
+            )
+            guard let url = URL(string: response.url) else {
+                streamError = "The stream link came back malformed."
+                showStreamError = true
+                return
+            }
+            let track = NowPlayingTrack(
+                id: trackId,
+                title: purchase.albumName ?? "Album",
+                subtitle: purchase.artistName,
+                artworkUrl: purchase.albumImageUrl,
+                audioUrl: url
+            )
+            await audioPlayer.play(track: track)
+        } catch let error as APIError {
+            streamError = error.errorDescription
+            showStreamError = true
+        } catch {
+            streamError = "Couldn't reach the stream. Check your connection."
+            showStreamError = true
+        }
     }
 
     // Postgres often returns timestamps as "2026-07-08T12:34:56.789Z" —

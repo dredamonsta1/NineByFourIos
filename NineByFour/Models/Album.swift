@@ -121,3 +121,26 @@ struct AlbumCheckoutResponse: Codable, Sendable {
         case sessionId = "session_id"
     }
 }
+
+// Return payload from GET /albums/:id/stream. Signed Cloudinary URL,
+// gated on the requester owning the album. TTL is short-lived — refetch
+// per play session rather than caching.
+struct AlbumStreamResponse: Codable, Sendable {
+    let albumId: Int
+    let albumName: String?
+    let artistId: Int?
+    let albumImageUrl: String?
+    let url: String
+    let format: String?
+    let expiresAt: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case albumId = "album_id"
+        case albumName = "album_name"
+        case artistId = "artist_id"
+        case albumImageUrl = "album_image_url"
+        case url
+        case format
+        case expiresAt = "expires_at"
+    }
+}
