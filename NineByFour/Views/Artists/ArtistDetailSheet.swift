@@ -1,5 +1,5 @@
 import SwiftUI
-import SafariServices
+import AuthenticationServices
 
 struct ArtistDetailSheet: View {
     let artistId: Int
@@ -345,10 +345,13 @@ private struct AlbumBuyButton: View {
 
     @State private var isAddingToList = false
     @State private var isStartingCheckout = false
-    @State private var checkoutSession: CheckoutSession?
     @State private var checkoutError: String?
     @State private var showCheckoutError = false
     @State private var justPurchased = false
+    // Holds the running ASWebAuthenticationSession so it isn't deallocated
+    // while presenting. Cleared in the completion handler.
+    @State private var webAuthSession: ASWebAuthenticationSession?
+    private let webAuthAnchor = WebAuthAnchorProvider()
 
     private var priceLabel: String {
         guard let cents = album.priceCents else { return "" }
@@ -392,24 +395,6 @@ private struct AlbumBuyButton: View {
             .cornerRadius(10)
         }
         .disabled(state == .top20Full || isAddingToList || isStartingCheckout)
-        .fullScreenCover(
-            item: $checkoutSession,
-            onDismiss: {
-                // User closed Safari (Done button). Refresh purchases —
-                // if they completed the buy, the button flips to Owned.
-                Task {
-                    let before = authManager.hasPurchased(albumId: album.albumId)
-                    await authManager.loadPurchases()
-                    let after = authManager.hasPurchased(albumId: album.albumId)
-                    if !before && after { justPurchased = true }
-                }
-            }
-        ) { session in
-            SafariView(url: session.url) {
-                checkoutSession = nil
-            }
-            .ignoresSafeArea()
-        }
         .alert("Couldn't start checkout", isPresented: $showCheckoutError) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -496,14 +481,15 @@ private struct AlbumBuyButton: View {
 
         do {
             let response: AlbumCheckoutResponse = try await APIClient.shared.request(
-                endpoint: .albumCheckout(id: album.albumId)
+                endpoint: .albumCheckout(id: album.albumId),
+                body: CheckoutRequestBody(client: "ios")
             )
             guard let url = URL(string: response.checkoutUrl) else {
                 checkoutError = "Received an invalid checkout link."
                 showCheckoutError = true
                 return
             }
-            checkoutSession = CheckoutSession(url: url)
+            presentCheckoutSession(url: url)
         } catch let error as APIError {
             checkoutError = error.errorDescription
             showCheckoutError = true
@@ -512,47 +498,79 @@ private struct AlbumBuyButton: View {
             showCheckoutError = true
         }
     }
-}
 
-// Wraps a URL so .fullScreenCover(item:) can identify presentation sessions.
-// The UUID keeps every open distinct — even if the same album is bought,
-// cancelled, then re-opened the sheet re-presents cleanly.
-private struct CheckoutSession: Identifiable {
-    let id = UUID()
-    let url: URL
-}
-
-// SFSafariViewController wrapper. Uses Apple's shared browser view so we
-// inherit cookies, autofill, and Apple Pay from Safari — the polished
-// path for a Stripe Checkout round-trip. `onFinish` fires when the user
-// taps Done in the Safari chrome; the parent view uses it to dismiss the
-// SwiftUI cover, which in turn fires .onDismiss to refresh purchases.
-private struct SafariView: UIViewControllerRepresentable {
-    let url: URL
-    let onFinish: () -> Void
-
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        let config = SFSafariViewController.Configuration()
-        config.entersReaderIfAvailable = false
-        config.barCollapsingEnabled = true
-        let vc = SFSafariViewController(url: url, configuration: config)
-        vc.delegate = context.coordinator
-        vc.dismissButtonStyle = .close
-        return vc
-    }
-
-    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onFinish: onFinish)
-    }
-
-    final class Coordinator: NSObject, SFSafariViewControllerDelegate {
-        let onFinish: () -> Void
-        init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
-        func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-            onFinish()
+    // ASWebAuthenticationSession opens Stripe Checkout in a system-managed
+    // browser view. When Stripe's success_url redirects to stanbox.com/checkout/return,
+    // the web bounce page sends the browser to stanbox://checkout/return?... —
+    // iOS matches the scheme against our callbackURLScheme, ends the session
+    // automatically, and hands us the URL in the completion handler.
+    @MainActor
+    private func presentCheckoutSession(url: URL) {
+        let session = ASWebAuthenticationSession(
+            url: url,
+            callbackURLScheme: "stanbox"
+        ) { callbackURL, error in
+            Task { @MainActor in
+                await handleCheckoutCallback(url: callbackURL, error: error)
+            }
         }
+        session.presentationContextProvider = webAuthAnchor
+        // Reuse Safari cookies so a signed-in Stripe customer doesn't have
+        // to enter card details every buy.
+        session.prefersEphemeralWebBrowserSession = false
+        webAuthSession = session
+        session.start()
+    }
+
+    @MainActor
+    private func handleCheckoutCallback(url: URL?, error: Error?) async {
+        webAuthSession = nil
+
+        // User taps Cancel or swipes down — silent no-op.
+        if let error = error as? ASWebAuthenticationSessionError,
+           error.code == .canceledLogin {
+            return
+        }
+        if error != nil {
+            checkoutError = "Checkout was interrupted. Try again."
+            showCheckoutError = true
+            return
+        }
+
+        let status = parseCallbackStatus(from: url)
+        guard status == "success" else { return }
+
+        let before = authManager.hasPurchased(albumId: album.albumId)
+        await authManager.loadPurchases()
+        let after = authManager.hasPurchased(albumId: album.albumId)
+        if !before && after { justPurchased = true }
+    }
+
+    private func parseCallbackStatus(from url: URL?) -> String {
+        guard let url,
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let statusItem = components.queryItems?.first(where: { $0.name == "status" }),
+              let value = statusItem.value else {
+            return "success"
+        }
+        return value
+    }
+}
+
+private struct CheckoutRequestBody: Encodable {
+    let client: String
+}
+
+// Bridges ASWebAuthenticationSession's UIKit anchor requirement into
+// SwiftUI. Grabs the current key window from the connected scene so the
+// system browser sheet has a stable presenter.
+private final class WebAuthAnchorProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+            ?? ASPresentationAnchor()
     }
 }
 
