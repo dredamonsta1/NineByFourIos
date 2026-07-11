@@ -15,11 +15,11 @@ struct LoginView: View {
                 VStack(spacing: 24) {
                     Spacer().frame(height: 40)
 
-                    VStack(spacing: 8) {
-                        Text("stanbox")
-                            .font(.system(size: 48, weight: .bold))
-                            .foregroundStyle(Color.Theme.accent)
-                    }
+                    Image("StanBoxLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 180)
+                        .accessibilityLabel("StanBox")
 
                     Spacer().frame(height: 4)
 
