@@ -17,11 +17,12 @@ struct WaitlistView: View {
                 VStack(spacing: 24) {
                     Spacer().frame(height: 40)
 
-                    // Logo
                     VStack(spacing: 8) {
-                        Text("stanbox")
-                            .font(.system(size: 48, weight: .bold))
-                            .foregroundStyle(Color.Theme.accent)
+                        Image("StanBoxLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 180)
+                            .accessibilityLabel("StanBox")
                         Text("Join the Waitlist")
                             .font(.title3)
                             .foregroundStyle(Color.Theme.textPrimary)
