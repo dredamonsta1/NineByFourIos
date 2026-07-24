@@ -18,7 +18,7 @@ struct LoginView: View {
                     Image("StanBoxLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 220)
+                        .frame(width: 180)
                         .accessibilityLabel("StanBox")
 
                     Spacer().frame(height: 4)
