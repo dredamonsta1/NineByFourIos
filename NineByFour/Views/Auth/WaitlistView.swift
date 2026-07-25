@@ -21,7 +21,7 @@ struct WaitlistView: View {
                         Image("StanBoxLogo")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 180)
+                            .frame(width: 220)
                             .accessibilityLabel("StanBox")
                         Text("Join the Waitlist")
                             .font(.title3)
