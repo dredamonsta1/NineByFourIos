@@ -122,6 +122,12 @@ struct ArtistDetailSheet: View {
                                         }
                                     }
                                 }
+
+                                // Archive.org bootlegs. Renders nothing at
+                                // all for artists without recordings, which
+                                // is most of them — including its own
+                                // divider, so no stray rule is left behind.
+                                LiveRecordingsSection(artistId: artistId)
                             }
                             .padding(.horizontal, 16)
                             .padding(.bottom, 24)

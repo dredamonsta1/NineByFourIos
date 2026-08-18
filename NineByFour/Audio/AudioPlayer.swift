@@ -9,6 +9,10 @@ final class AudioPlayer {
     // MARK: - Published state
 
     private(set) var currentTrack: NowPlayingTrack?
+    /// The set being played through. A single track is a queue of one, so
+    /// every source routes through the same path.
+    private(set) var queue: [NowPlayingTrack] = []
+    private(set) var queueIndex = 0
     private(set) var isPlaying = false
     private(set) var isLoading = false
     private(set) var fftBars: [Float] = Array(repeating: 0, count: FFTAnalyzer.barCount)
@@ -23,6 +27,12 @@ final class AudioPlayer {
     private var cachedFile: URL?
     private let fft = FFTAnalyzer()
     private var didConfigureSession = false
+    /// Bumped on every track change. scheduleFile's completion handler fires
+    /// both when a file plays out AND when the node is reset — so skipping
+    /// or stopping would otherwise look identical to "track finished" and
+    /// advance the queue a second time. The handler captures the generation
+    /// it was scheduled under and does nothing if it's no longer current.
+    private var playbackGeneration = 0
 
     init() {
         engine.attach(playerNode)
@@ -41,10 +51,49 @@ final class AudioPlayer {
         await play(track: track)
     }
 
-    // Canonical playback entry point. All sources (feed music post, library
-    // album, preview clip) route through here.
+    // Canonical single-track entry point. All sources (feed music post,
+    // library album, preview clip) route through here. A lone track is a
+    // queue of one so there's only one playback path to reason about.
     func play(track: NowPlayingTrack) async {
+        await play(queue: [track], startIndex: 0)
+    }
+
+    /// Play a set, e.g. every track of a live concert. Out-of-range start
+    /// indices are clamped rather than rejected — a caller shouldn't have to
+    /// know how long the set is.
+    func play(queue tracks: [NowPlayingTrack], startIndex: Int = 0) async {
+        guard !tracks.isEmpty else {
+            errorMessage = "Nothing to play."
+            return
+        }
         await stop()
+        queue = tracks
+        queueIndex = min(max(0, startIndex), tracks.count - 1)
+        await playCurrent()
+    }
+
+    var hasNext: Bool { queueIndex + 1 < queue.count }
+    var hasPrevious: Bool { queueIndex > 0 }
+
+    func next() async {
+        guard hasNext else { return }
+        queueIndex += 1
+        await playCurrent()
+    }
+
+    func previous() async {
+        guard hasPrevious else { return }
+        queueIndex -= 1
+        await playCurrent()
+    }
+
+    /// Plays whatever `queueIndex` points at, leaving the queue intact —
+    /// unlike stop(), which clears it. Track changes go through here.
+    private func playCurrent() async {
+        guard queue.indices.contains(queueIndex) else { return }
+        let track = queue[queueIndex]
+
+        await teardownAudio()
 
         isLoading = true
         errorMessage = nil
@@ -83,6 +132,16 @@ final class AudioPlayer {
     }
 
     func stop() async {
+        await teardownAudio()
+        queue = []
+        queueIndex = 0
+        currentTrack = nil
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    /// Tears the audio graph down without touching the queue.
+    private func teardownAudio() async {
+        playbackGeneration += 1
         downloadTask?.cancel()
         downloadTask = nil
         if playerNode.isPlaying { playerNode.stop() }
@@ -94,10 +153,8 @@ final class AudioPlayer {
         audioFile = nil
         if let cachedFile { try? FileManager.default.removeItem(at: cachedFile) }
         cachedFile = nil
-        currentTrack = nil
         isPlaying = false
         fftBars = Array(repeating: 0, count: FFTAnalyzer.barCount)
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
 
     // MARK: - Download
@@ -157,19 +214,27 @@ final class AudioPlayer {
         }
 
         try engine.start()
+        let generation = playbackGeneration
         playerNode.scheduleFile(file, at: nil) { [weak self] in
             Task { @MainActor [weak self] in
-                await self?.handlePlaybackFinished()
+                await self?.handlePlaybackFinished(generation: generation)
             }
         }
         playerNode.play()
     }
 
-    private func handlePlaybackFinished() async {
-        // Only treat as finished if we were the active player (avoid race
-        // with a user-initiated stop()).
+    private func handlePlaybackFinished(generation: Int) async {
+        // A reset fires this handler too, so a skip or a stop would look
+        // exactly like a natural end and advance the queue again. Ignore
+        // anything scheduled under a superseded generation.
+        guard generation == playbackGeneration else { return }
         guard isPlaying else { return }
-        await stop()
+
+        if hasNext {
+            await next()
+        } else {
+            await stop()
+        }
     }
 
     // MARK: - Now Playing
@@ -198,6 +263,14 @@ final class AudioPlayer {
         }
         cc.togglePlayPauseCommand.addTarget { [weak self] _ in
             Task { @MainActor [weak self] in self?.togglePlayPause() }
+            return .success
+        }
+        cc.nextTrackCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in await self?.next() }
+            return .success
+        }
+        cc.previousTrackCommand.addTarget { [weak self] _ in
+            Task { @MainActor [weak self] in await self?.previous() }
             return .success
         }
     }
