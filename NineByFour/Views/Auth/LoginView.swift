@@ -53,6 +53,20 @@ struct LoginView: View {
                         codeForm
                     }
 
+                    // Sign-up was unreachable before this: RegisterView
+                    // existed but nothing presented it, so an approved
+                    // waitlist user with an invite code had no way to make
+                    // an account in the app.
+                    NavigationLink {
+                        RegisterView()
+                    } label: {
+                        Text("Have an invite code? ")
+                            .foregroundStyle(Color.Theme.textSecondary)
+                        + Text("Create account")
+                            .foregroundStyle(Color.Theme.accent)
+                    }
+                    .font(.subheadline)
+
                     NavigationLink {
                         WaitlistView()
                     } label: {
