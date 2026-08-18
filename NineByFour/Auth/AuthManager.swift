@@ -25,30 +25,6 @@ final class AuthManager {
         }
     }
 
-    @MainActor
-    func login(username: String, password: String) async {
-        isLoading = true
-        errorMessage = nil
-
-        do {
-            let body = LoginBody(username: username, password: password)
-            let response: LoginResponse = try await APIClient.shared.request(
-                endpoint: .login,
-                body: body
-            )
-            KeychainHelper.shared.saveToken(response.token)
-            currentUser = response.user
-            isAuthenticated = true
-            await loadPurchases()
-        } catch let error as APIError {
-            errorMessage = error.errorDescription
-        } catch {
-            errorMessage = "An unexpected error occurred."
-        }
-
-        isLoading = false
-    }
-
     // Note: requestCode/verifyCode intentionally do NOT toggle isLoading.
     // AuthGateView shows LoadingStateView while isLoading is true, which
     // would unmount LoginView mid-request and wipe the OTP step + email
@@ -67,12 +43,25 @@ final class AuthManager {
         }
     }
 
+    /// Verifies an emailed code. Passing `username` + `inviteCode` turns this
+    /// into signup — the backend creates the account on the same call rather
+    /// than needing a separate register-then-login round trip.
     @MainActor
-    func verifyCode(email: String, code: String) async {
+    func verifyCode(
+        email: String,
+        code: String,
+        username: String? = nil,
+        inviteCode: String? = nil
+    ) async {
         errorMessage = nil
 
         do {
-            let body = VerifyCodeBody(email: email, code: code)
+            let body = VerifyCodeBody(
+                email: email,
+                code: code,
+                username: username,
+                inviteCode: inviteCode
+            )
             let response: LoginResponse = try await APIClient.shared.request(
                 endpoint: .verifyCode,
                 body: body
@@ -124,11 +113,6 @@ final class AuthManager {
     }
 }
 
-private struct LoginBody: Encodable {
-    let username: String
-    let password: String
-}
-
 private struct RequestCodeBody: Encodable {
     let email: String
 }
@@ -136,4 +120,13 @@ private struct RequestCodeBody: Encodable {
 private struct VerifyCodeBody: Encodable {
     let email: String
     let code: String
+    /// Only sent when signing up. Encodable skips nils, so a plain login
+    /// posts exactly the same body it always did.
+    let username: String?
+    let inviteCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case email, code, username
+        case inviteCode = "invite_code"
+    }
 }

@@ -4,13 +4,16 @@ import Observation
 @Observable
 final class AuthViewModel {
     enum OTPStep { case email, code }
+    /// Login and signup are the same two-step flow; signup just carries a
+    /// username + invite code through to the verify call, which is what
+    /// tells the backend to create the account.
+    enum Mode { case login, signup }
 
     static let resendCooldownSeconds = 30
 
+    var mode: Mode = .login
     var username = ""
-    var password = ""
     var email = ""
-    var confirmPassword = ""
     var inviteCode = ""
     var code = ""
     var otpStep: OTPStep = .email
@@ -22,28 +25,18 @@ final class AuthViewModel {
     private var cooldownTask: Task<Void, Never>?
 
     @MainActor
-    func login(authManager: AuthManager) async {
-        guard !username.isEmpty, !password.isEmpty else {
-            errorMessage = "Please enter username and password."
-            return
-        }
-
-        isLoading = true
-        errorMessage = nil
-        await authManager.login(username: username, password: password)
-
-        if let error = authManager.errorMessage {
-            errorMessage = error
-        }
-        isLoading = false
-    }
-
-    @MainActor
     func sendOTPCode(authManager: AuthManager, silent: Bool = false) async {
         let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !normalized.isEmpty else {
             errorMessage = "Email is required."
             return
+        }
+        if mode == .signup {
+            guard !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !inviteCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                errorMessage = "Username and invite code are required."
+                return
+            }
         }
         errorMessage = nil
         if !silent { infoMessage = nil }
@@ -77,7 +70,16 @@ final class AuthViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        await authManager.verifyCode(email: email, code: trimmed)
+        await authManager.verifyCode(
+            email: email,
+            code: trimmed,
+            username: mode == .signup
+                ? username.trimmingCharacters(in: .whitespacesAndNewlines)
+                : nil,
+            inviteCode: mode == .signup
+                ? inviteCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+                : nil
+        )
 
         if let error = authManager.errorMessage {
             errorMessage = error
@@ -104,57 +106,5 @@ final class AuthViewModel {
                 self.resendCooldown -= 1
             }
         }
-    }
-
-    @MainActor
-    func register(authManager: AuthManager) async {
-        guard !username.isEmpty, !email.isEmpty, !password.isEmpty, !inviteCode.isEmpty else {
-            errorMessage = "All fields are required."
-            return
-        }
-        guard password == confirmPassword else {
-            errorMessage = "Passwords do not match."
-            return
-        }
-
-        isLoading = true
-        errorMessage = nil
-
-        do {
-            let body = RegisterBody(
-                username: username,
-                email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
-                password: password,
-                inviteCode: inviteCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-            )
-            let _: LoginResponse = try await APIClient.shared.request(
-                endpoint: .register,
-                body: body
-            )
-            // Auto-login after registration
-            await authManager.login(username: username, password: password)
-
-            if let error = authManager.errorMessage {
-                errorMessage = error
-            }
-        } catch let error as APIError {
-            errorMessage = error.errorDescription
-        } catch {
-            errorMessage = "Registration failed. Please try again."
-        }
-
-        isLoading = false
-    }
-}
-
-private struct RegisterBody: Encodable {
-    let username: String
-    let email: String
-    let password: String
-    let inviteCode: String
-
-    enum CodingKeys: String, CodingKey {
-        case username, email, password
-        case inviteCode = "invite_code"
     }
 }
