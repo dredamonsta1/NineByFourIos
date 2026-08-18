@@ -14,15 +14,37 @@ struct PlayerBar: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.Theme.textPrimary)
                         .lineLimit(1)
-                    if let subtitle = track.subtitle {
-                        Text(subtitle)
-                            .font(.caption2)
-                            .foregroundStyle(Color.Theme.textSecondary)
-                            .lineLimit(1)
+                    HStack(spacing: 6) {
+                        if let subtitle = track.subtitle {
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundStyle(Color.Theme.textSecondary)
+                                .lineLimit(1)
+                        }
+                        if player.queue.count > 1 {
+                            Text("\(player.queueIndex + 1)/\(player.queue.count)")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(Color.Theme.textSecondary)
+                        }
                     }
                 }
 
                 Spacer()
+
+                if player.queue.count > 1 {
+                    Button {
+                        Task { await player.previous() }
+                    } label: {
+                        Image(systemName: "backward.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(player.hasPrevious
+                                             ? Color.Theme.accent
+                                             : Color.Theme.textSecondary)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!player.hasPrevious)
+                }
 
                 Button {
                     player.togglePlayPause()
@@ -40,6 +62,21 @@ struct PlayerBar: View {
                     }
                 }
                 .buttonStyle(.plain)
+
+                if player.queue.count > 1 {
+                    Button {
+                        Task { await player.next() }
+                    } label: {
+                        Image(systemName: "forward.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(player.hasNext
+                                             ? Color.Theme.accent
+                                             : Color.Theme.textSecondary)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!player.hasNext)
+                }
 
                 Button {
                     Task { await player.stop() }

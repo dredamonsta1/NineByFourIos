@@ -29,6 +29,10 @@ nonisolated enum APIEndpoint: Sendable {
     case albumStream(id: Int)
     case albumPreview(id: Int)
 
+    // MARK: - Live recordings (Internet Archive bootlegs)
+    case liveRecordings(artistId: Int)
+    case liveRecordingTracks(recordingId: Int)
+
     // MARK: - Feed
     case feed
     case feedText
@@ -102,6 +106,10 @@ nonisolated enum APIEndpoint: Sendable {
         case .albumCheckout(let id): return "/albums/\(id)/checkout"
         case .albumStream(let id): return "/albums/\(id)/stream"
         case .albumPreview(let id): return "/albums/\(id)/preview"
+        case .liveRecordings(let artistId):
+            return "/live-recordings?artist_id=\(artistId)&limit=50"
+        case .liveRecordingTracks(let recordingId):
+            return "/live-recordings/\(recordingId)/tracks"
 
         // Feed
         case .feed: return "/feed"
@@ -161,7 +169,7 @@ nonisolated enum APIEndpoint: Sendable {
     var requiresAuth: Bool {
         switch self {
         case .requestCode, .verifyCode, .waitlistJoin, .waitlistVerify,
-             .albumPreview:
+             .albumPreview, .liveRecordings, .liveRecordingTracks:
             return false
         default:
             return true
