@@ -16,6 +16,7 @@ nonisolated enum APIEndpoint: Sendable {
     case me
     case userProfile(userId: Int)
     case uploadProfileImage
+    case deleteAccount
     case mePurchases
 
     // MARK: - Artists (read-only on iOS — artist-side management is web)
@@ -92,6 +93,7 @@ nonisolated enum APIEndpoint: Sendable {
         case .me: return "/users/me"
         case .userProfile(let userId): return "/users/\(userId)/profile"
         case .uploadProfileImage: return "/users/profile-image"
+        case .deleteAccount: return "/users/me"
         case .mePurchases: return "/users/me/purchases"
 
         // Artists
@@ -190,7 +192,7 @@ nonisolated enum APIEndpoint: Sendable {
 
         case .deleteFeedPost, .deleteImagePost,
              .removeFromProfileList, .unfollow,
-             .deleteEvent:
+             .deleteEvent, .deleteAccount:
             return .DELETE
 
         default:
