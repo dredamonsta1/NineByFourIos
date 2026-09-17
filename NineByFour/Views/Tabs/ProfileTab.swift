@@ -5,6 +5,7 @@ struct ProfileTab: View {
     @State private var viewModel = ProfileViewModel()
     @State private var showImagePicker = false
     @State private var showFollowers = false
+    @State private var showDeleteAccount = false
     @State private var showFollowing = false
     @State private var searchDebounce: Task<Void, Never>?
 
@@ -183,6 +184,17 @@ struct ProfileTab: View {
                                 .cornerRadius(8)
                             }
                             .padding(.top, 8)
+
+                            Button {
+                                showDeleteAccount = true
+                            } label: {
+                                Text("Delete account")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Color.Theme.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            .padding(.top, 4)
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
@@ -194,6 +206,9 @@ struct ProfileTab: View {
             }
             .navigationTitle("Profile")
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $showDeleteAccount) {
+                DeleteAccountView(username: authManager.currentUser?.username ?? "")
+            }
             .sheet(isPresented: $showImagePicker) {
                 ImagePickerView { newImageUrl in
                     authManager.currentUser?.profileImage = newImageUrl
