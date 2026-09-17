@@ -25,7 +25,6 @@ nonisolated enum APIEndpoint: Sendable {
     case removeClout(id: Int)
 
     // MARK: - Albums (Pillar B commerce)
-    case albumCheckout(id: Int)
     case albumStream(id: Int)
     case albumPreview(id: Int)
 
@@ -38,7 +37,6 @@ nonisolated enum APIEndpoint: Sendable {
     case feedText
     case feedImage
     case feedVideo
-    case feedVideoUrl
     case feedMusic
     case deleteFeedPost(type: String, id: Int)
 
@@ -103,7 +101,6 @@ nonisolated enum APIEndpoint: Sendable {
         case .removeClout(let id): return "/artists/\(id)/clout/remove"
 
         // Albums
-        case .albumCheckout(let id): return "/albums/\(id)/checkout"
         case .albumStream(let id): return "/albums/\(id)/stream"
         case .albumPreview(let id): return "/albums/\(id)/preview"
         case .liveRecordings(let artistId):
@@ -116,7 +113,6 @@ nonisolated enum APIEndpoint: Sendable {
         case .feedText: return "/feed/text"
         case .feedImage: return "/feed/image"
         case .feedVideo: return "/feed/video"
-        case .feedVideoUrl: return "/feed/video-url"
         case .feedMusic: return "/feed/music"
         case .deleteFeedPost(let type, let id): return "/feed/\(type)/\(id)"
 
@@ -179,9 +175,8 @@ nonisolated enum APIEndpoint: Sendable {
     var method: HTTPMethod {
         switch self {
         case .requestCode, .verifyCode, .uploadProfileImage,
-             .feedText, .feedImage, .feedVideo, .feedVideoUrl, .feedMusic,
+             .feedText, .feedImage, .feedVideo, .feedMusic,
              .createImagePost,
-             .albumCheckout,
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
              .waitlistJoin, .waitlistVerify, .createEvent:
