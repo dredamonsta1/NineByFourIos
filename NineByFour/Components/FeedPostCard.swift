@@ -5,8 +5,54 @@ struct FeedPostCard: View {
     let currentUserId: Int?
     var onTapUsername: ((Int) -> Void)?
     var onDelete: (() -> Void)?
+    /// Called after a successful block so the feed can drop the post without
+    /// waiting for a refresh. Seeing the post you just blocked still sitting
+    /// there reads as the block having failed.
+    var onBlocked: ((Int) -> Void)?
+
+    @State private var showReport = false
+    @State private var showBlockConfirm = false
+    @State private var isBlocking = false
 
     var body: some View {
+        cardBody
+            .sheet(isPresented: $showReport) {
+                ReportSheet(
+                    targetType: post.postType.rawValue == "text" ? "post" : "\(post.postType.rawValue)_post",
+                    targetId: post.id,
+                    reportedUserId: post.userId,
+                    preview: post.content ?? post.caption
+                )
+            }
+            .confirmationDialog(
+                "Block \(post.username ?? "this user")?",
+                isPresented: $showBlockConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Block", role: .destructive) {
+                    Task { await block() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You won't see their posts and they won't be able to message you. They aren't told.")
+            }
+    }
+
+    private func block() async {
+        guard !isBlocking else { return }
+        isBlocking = true
+        do {
+            try await APIClient.shared.requestVoid(endpoint: .blockUser(userId: post.userId))
+            onBlocked?(post.userId)
+        } catch {
+            // Deliberately quiet. A failed block is retryable from the same
+            // menu, and an alert here would sit on top of the content the user
+            // is trying to get away from.
+        }
+        isBlocking = false
+    }
+
+    private var cardBody: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header
             HStack {
@@ -40,15 +86,36 @@ struct FeedPostCard: View {
                         .clipShape(Capsule())
                 }
 
-                if post.userId == currentUserId {
-                    Button {
-                        onDelete?()
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.caption)
-                            .foregroundStyle(Color.Theme.error)
+                // App Store Guideline 1.2: content-level report and block must
+                // be reachable from the content itself. A reviewer looks for
+                // this menu; burying it in settings does not satisfy the rule.
+                Menu {
+                    if post.userId == currentUserId {
+                        Button(role: .destructive) {
+                            onDelete?()
+                        } label: {
+                            Label("Delete post", systemImage: "trash")
+                        }
+                    } else {
+                        Button {
+                            showReport = true
+                        } label: {
+                            Label("Report post", systemImage: "flag")
+                        }
+                        Button(role: .destructive) {
+                            showBlockConfirm = true
+                        } label: {
+                            Label("Block \(post.username ?? "this user")", systemImage: "hand.raised")
+                        }
                     }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.caption)
+                        .foregroundStyle(Color.Theme.textSecondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
+                .disabled(isBlocking)
             }
 
             // Content based on type

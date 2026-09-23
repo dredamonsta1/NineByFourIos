@@ -11,6 +11,8 @@ struct UserProfileView: View {
     @State private var isFollowing = false
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var showReport = false
+    @State private var showBlockConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -122,6 +124,28 @@ struct UserProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
+                // Guideline 1.2 expects report and block to be reachable from
+                // the person as well as from individual content — someone who
+                // wants a user gone should not have to find one of their posts.
+                if userId != authManager.currentUser?.id {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Menu {
+                            Button {
+                                showReport = true
+                            } label: {
+                                Label("Report user", systemImage: "flag")
+                            }
+                            Button(role: .destructive) {
+                                showBlockConfirm = true
+                            } label: {
+                                Label("Block user", systemImage: "hand.raised")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundStyle(Color.Theme.textSecondary)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         dismiss()
@@ -131,9 +155,40 @@ struct UserProfileView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showReport) {
+                ReportSheet(
+                    targetType: "user",
+                    targetId: userId,
+                    reportedUserId: userId,
+                    preview: user?.username
+                )
+            }
+            .confirmationDialog(
+                "Block \(user?.username ?? "this user")?",
+                isPresented: $showBlockConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Block", role: .destructive) {
+                    Task { await blockUser() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You won't see their posts and they won't be able to message you. They aren't told.")
+            }
         }
         .task {
             await loadProfile()
+        }
+    }
+
+    private func blockUser() async {
+        do {
+            try await APIClient.shared.requestVoid(endpoint: .blockUser(userId: userId))
+            // Closing is the confirmation. Staying on the profile of someone
+            // you just blocked is a strange place to leave the user.
+            dismiss()
+        } catch {
+            errorMessage = "Couldn't block this user. Try again."
         }
     }
 

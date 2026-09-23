@@ -34,15 +34,19 @@ struct FeedTab: View {
                                     currentUserId: authManager.currentUser?.id,
                                     onTapUsername: { userId in
                                         selectedProfileUserId = userId
+                                    },
+                                    onDelete: {
+                                        Task {
+                                            await viewModel.deletePost(
+                                                type: post.postType.rawValue,
+                                                id: post.id
+                                            )
+                                        }
+                                    },
+                                    onBlocked: { userId in
+                                        viewModel.removePosts(byUserId: userId)
                                     }
-                                ) {
-                                    Task {
-                                        await viewModel.deletePost(
-                                            type: post.postType.rawValue,
-                                            id: post.id
-                                        )
-                                    }
-                                }
+                                )
                             }
                         }
                         .padding(.horizontal, 16)
