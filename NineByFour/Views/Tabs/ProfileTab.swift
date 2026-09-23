@@ -6,6 +6,7 @@ struct ProfileTab: View {
     @State private var showImagePicker = false
     @State private var showFollowers = false
     @State private var showDeleteAccount = false
+    @State private var showBlockedUsers = false
     @State private var showFollowing = false
     @State private var searchDebounce: Task<Void, Never>?
 
@@ -185,6 +186,20 @@ struct ProfileTab: View {
                             }
                             .padding(.top, 8)
 
+                            // Unblocking has to live somewhere. Blocking
+                            // without a way back is a trap: it is reached for
+                            // in a bad moment and is otherwise permanent.
+                            Button {
+                                showBlockedUsers = true
+                            } label: {
+                                Text("Blocked accounts")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Color.Theme.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            .padding(.top, 8)
+
                             Button {
                                 showDeleteAccount = true
                             } label: {
@@ -206,6 +221,9 @@ struct ProfileTab: View {
             }
             .navigationTitle("Profile")
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $showBlockedUsers) {
+                BlockedUsersView()
+            }
             .sheet(isPresented: $showDeleteAccount) {
                 DeleteAccountView(username: authManager.currentUser?.username ?? "")
             }

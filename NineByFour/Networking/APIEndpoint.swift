@@ -41,6 +41,12 @@ nonisolated enum APIEndpoint: Sendable {
     case feedMusic
     case deleteFeedPost(type: String, id: Int)
 
+    // MARK: - Moderation (App Store Guideline 1.2)
+    case blockUser(userId: Int)
+    case unblockUser(userId: Int)
+    case blockedUsers
+    case reportContent
+
     // MARK: - Image Posts
     case imagePosts
     case createImagePost
@@ -117,6 +123,10 @@ nonisolated enum APIEndpoint: Sendable {
         case .feedVideo: return "/feed/video"
         case .feedMusic: return "/feed/music"
         case .deleteFeedPost(let type, let id): return "/feed/\(type)/\(id)"
+        case .blockUser(let userId): return "/moderation/block/\(userId)"
+        case .unblockUser(let userId): return "/moderation/block/\(userId)"
+        case .blockedUsers: return "/moderation/blocks"
+        case .reportContent: return "/moderation/report"
 
         // Image Posts
         case .imagePosts: return "/image-posts"
@@ -181,7 +191,8 @@ nonisolated enum APIEndpoint: Sendable {
              .createImagePost,
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
-             .waitlistJoin, .waitlistVerify, .createEvent:
+             .waitlistJoin, .waitlistVerify, .createEvent,
+             .blockUser, .reportContent:
             return .POST
 
         case .clout, .removeClout:
@@ -192,7 +203,7 @@ nonisolated enum APIEndpoint: Sendable {
 
         case .deleteFeedPost, .deleteImagePost,
              .removeFromProfileList, .unfollow,
-             .deleteEvent, .deleteAccount:
+             .deleteEvent, .deleteAccount, .unblockUser:
             return .DELETE
 
         default:

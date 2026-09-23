@@ -75,6 +75,16 @@ final class FeedViewModel {
     }
 
     @MainActor
+    /// Drops every post by a blocked user from the in-memory feed.
+    ///
+    /// The server already filters them, but only on the next fetch. Leaving
+    /// the posts on screen until a refresh reads as the block having failed,
+    /// which is the worst possible impression for a control someone reaches
+    /// for when they are upset.
+    func removePosts(byUserId userId: Int) {
+        posts.removeAll { $0.userId == userId }
+    }
+
     func deletePost(type: String, id: Int) async {
         do {
             try await APIClient.shared.requestVoid(endpoint: .deleteFeedPost(type: type, id: id))
