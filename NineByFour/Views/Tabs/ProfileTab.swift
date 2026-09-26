@@ -92,6 +92,29 @@ struct ProfileTab: View {
                                     .font(.headline)
                                     .foregroundStyle(Color.Theme.textPrimary)
 
+                                // The payoff for building a Top 20. Sits above
+                                // the search so a new user sees what the list is
+                                // FOR before being asked to fill it.
+                                MusicPersonalityCard(
+                                    artists: viewModel.profileList,
+                                    title: authManager.currentUser?.musicPersonalityTitle,
+                                    description: authManager.currentUser?.musicPersonalityDesc,
+                                    isPublic: authManager.currentUser?.musicPersonalityPublic ?? false,
+                                    onGenerated: { title, desc in
+                                        authManager.currentUser?.musicPersonalityTitle = title
+                                        authManager.currentUser?.musicPersonalityDesc = desc
+                                    },
+                                    onVisibilityChanged: { isPublic in
+                                        authManager.currentUser?.musicPersonalityPublic = isPublic
+                                        Task {
+                                            try? await APIClient.shared.requestVoid(
+                                                endpoint: .musicPersonalityVisibility,
+                                                body: ["public": isPublic]
+                                            )
+                                        }
+                                    }
+                                )
+
                                 // Artist search
                                 VStack(spacing: 6) {
                                     SearchBar(text: $viewModel.searchText, placeholder: "Search for an artist...")
