@@ -194,7 +194,7 @@ struct WelcomeView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(count >= Self.target ? Color.Theme.accent : Color.Theme.bgCardElevated)
+                .background(count >= Self.target ? Color.Theme.contrast : Color.Theme.bgCardElevated)
                 .foregroundStyle(count >= Self.target ? Color.Theme.bgBase : Color.Theme.textSecondary)
                 .cornerRadius(10)
             }
@@ -236,7 +236,7 @@ struct WelcomeView: View {
                     .font(.subheadline.weight(.bold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color.Theme.accent)
+                    .background(Color.Theme.contrast)
                     .foregroundStyle(Color.Theme.bgBase)
                     .cornerRadius(10)
             }

@@ -51,6 +51,7 @@ struct HomeTab: View {
                 }
             }
             .navigationTitle("Artists")
+            .brandedNavBar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(item: Binding(
                 get: { selectedArtistId.map { SheetItem(id: $0) } },

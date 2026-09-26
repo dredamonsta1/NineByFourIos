@@ -72,8 +72,8 @@ struct PostCreatorView: View {
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
                     .padding(14)
-                    .background(Color.Theme.accent)
-                    .foregroundStyle(.white)
+                    .background(Color.Theme.contrast)
+                    .foregroundStyle(Color.Theme.bgBase)
                     .cornerRadius(8)
             }
             .disabled(viewModel.newPostContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -126,8 +126,8 @@ struct PostCreatorView: View {
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
                     .padding(14)
-                    .background(Color.Theme.accent)
-                    .foregroundStyle(.white)
+                    .background(Color.Theme.contrast)
+                    .foregroundStyle(Color.Theme.bgBase)
                     .cornerRadius(8)
             }
             .disabled(viewModel.musicStreamUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

@@ -23,6 +23,18 @@ extension Color {
         static let accent = Color(hex: 0x0077B6)
         static let accentLight = Color(hex: 0x00B4D8)
 
+        /// Brand contrast — electric chartreuse. Shipped to web 2026-07-10 and
+        /// never crossed to iOS, which is most of why the app reads as bland:
+        /// every CTA rendered in the same cyan as an ordinary link.
+        ///
+        /// Reserved, per the web rule: primary CTAs, rank #1, "New" chips.
+        /// NOT links, selected states, tab tint or badges — spending it on
+        /// navigation is what the rule deliberately avoids, because the colour
+        /// only signals "act" if it is not also signalling "you are here".
+        ///
+        /// It is LIGHT. Text on it must be bgBase, never white.
+        static let contrast = Color(hex: 0xD6FF3D)
+
         // Text
         static let textBright = Color.white
         static let textPrimary = Color(hex: 0xE0E6ED)

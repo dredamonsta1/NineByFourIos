@@ -57,6 +57,7 @@ struct DiscoverTab: View {
                 }
             }
             .navigationTitle("Discover")
+            .brandedNavBar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 if viewModel.selectedSection == .events && authManager.isAuthenticated {

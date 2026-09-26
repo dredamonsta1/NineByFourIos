@@ -125,7 +125,7 @@ struct MusicPersonalityCard: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
-                .background(Color.Theme.accent)
+                .background(Color.Theme.contrast)
                 .foregroundStyle(Color.Theme.bgBase)
                 .cornerRadius(8)
             }

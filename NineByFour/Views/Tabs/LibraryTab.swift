@@ -54,6 +54,7 @@ struct LibraryTab: View {
                 }
             }
             .navigationTitle("Library")
+            .brandedNavBar()
         }
     }
 

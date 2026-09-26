@@ -52,6 +52,7 @@ struct MessagesTab: View {
                 }
             }
             .navigationTitle("Messages")
+            .brandedNavBar()
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .task {
