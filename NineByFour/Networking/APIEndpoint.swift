@@ -47,6 +47,10 @@ nonisolated enum APIEndpoint: Sendable {
     case blockedUsers
     case reportContent
 
+    // MARK: - Music Personality
+    case musicPersonality
+    case musicPersonalityVisibility
+
     // MARK: - Image Posts
     case imagePosts
     case createImagePost
@@ -126,6 +130,8 @@ nonisolated enum APIEndpoint: Sendable {
         case .blockUser(let userId): return "/moderation/block/\(userId)"
         case .unblockUser(let userId): return "/moderation/block/\(userId)"
         case .blockedUsers: return "/moderation/blocks"
+        case .musicPersonality: return "/users/me/music-personality"
+        case .musicPersonalityVisibility: return "/users/me/music-personality/visibility"
         case .reportContent: return "/moderation/report"
 
         // Image Posts
@@ -192,13 +198,13 @@ nonisolated enum APIEndpoint: Sendable {
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
              .waitlistJoin, .waitlistVerify, .createEvent,
-             .blockUser, .reportContent:
+             .blockUser, .reportContent, .musicPersonality:
             return .POST
 
         case .clout, .removeClout:
             return .PUT
 
-        case .markConversationRead:
+        case .markConversationRead, .musicPersonalityVisibility:
             return .PATCH
 
         case .deleteFeedPost, .deleteImagePost,
