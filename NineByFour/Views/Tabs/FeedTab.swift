@@ -58,6 +58,7 @@ struct FeedTab: View {
                 }
             }
             .navigationTitle("Feed")
+            .brandedNavBar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 if authManager.isAuthenticated {

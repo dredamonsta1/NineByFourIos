@@ -116,8 +116,8 @@ struct LoginView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(14)
-                .background(Color.Theme.accent)
-                .foregroundStyle(.white)
+                .background(Color.Theme.contrast)
+                .foregroundStyle(Color.Theme.bgBase)
                 .cornerRadius(8)
             }
             .disabled(viewModel.isLoading || viewModel.email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -155,8 +155,8 @@ struct LoginView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(14)
-                .background(Color.Theme.accent)
-                .foregroundStyle(.white)
+                .background(Color.Theme.contrast)
+                .foregroundStyle(Color.Theme.bgBase)
                 .cornerRadius(8)
             }
             .disabled(viewModel.isLoading || viewModel.code.count != 6)

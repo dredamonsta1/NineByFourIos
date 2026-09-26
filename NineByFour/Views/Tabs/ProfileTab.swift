@@ -243,6 +243,7 @@ struct ProfileTab: View {
                 }
             }
             .navigationTitle("Profile")
+            .brandedNavBar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $showBlockedUsers) {
                 BlockedUsersView()
