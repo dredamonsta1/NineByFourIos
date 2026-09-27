@@ -165,15 +165,17 @@ struct ProfileTab: View {
                                         .frame(maxWidth: .infinity, alignment: .center)
                                         .padding(.vertical, 20)
                                 } else {
-                                    LazyVStack(spacing: 8) {
-                                        ForEach(viewModel.profileList) { artist in
-                                            FavoriteArtistRow(artist: artist) {
-                                                Task {
-                                                    await viewModel.removeFromProfileList(artistId: artist.artistId)
-                                                }
+                                    // The Top 20 as an identity artifact, not
+                                    // a browse list. #1 gets real estate, and
+                                    // tier/tenure are first-class.
+                                    Top20Shrine(
+                                        entries: viewModel.shrineEntries,
+                                        onRemove: { artistId in
+                                            Task {
+                                                await viewModel.removeFromProfileList(artistId: artistId)
                                             }
                                         }
-                                    }
+                                    )
                                 }
                             }
 
@@ -276,7 +278,8 @@ struct ProfileTab: View {
             async let f: () = viewModel.loadFollowers(userId: userId)
             async let g: () = viewModel.loadFollowing(userId: userId)
             async let s: () = viewModel.loadTasteSuggestions()
-            _ = await (f, g, s)
+            async let r: () = viewModel.loadStanRanks(userId: userId)
+            _ = await (f, g, s, r)
         }
     }
 
