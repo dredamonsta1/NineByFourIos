@@ -179,6 +179,11 @@ struct ProfileTab: View {
                                 }
                             }
 
+                            // Ported from web: both were invisible on the
+                            // phone that shares them.
+                            QuarterlyPicksSection(response: viewModel.quarterlyPicks)
+                            CratesSection(crates: viewModel.crates)
+
                             // Similar taste suggestions
                             if !viewModel.tasteSuggestions.isEmpty {
                                 VStack(alignment: .leading, spacing: 10) {
@@ -279,7 +284,9 @@ struct ProfileTab: View {
             async let g: () = viewModel.loadFollowing(userId: userId)
             async let s: () = viewModel.loadTasteSuggestions()
             async let r: () = viewModel.loadStanRanks(userId: userId)
-            _ = await (f, g, s, r)
+            async let c: () = viewModel.loadCrates()
+            async let q: () = viewModel.loadQuarterlyPicks()
+            _ = await (f, g, s, r, c, q)
         }
     }
 
