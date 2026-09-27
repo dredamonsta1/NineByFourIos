@@ -50,6 +50,7 @@ nonisolated enum APIEndpoint: Sendable {
     // MARK: - Music Personality
     case musicPersonality
     case musicPersonalityVisibility
+    case stanCard(userId: Int)
 
     // MARK: - Image Posts
     case imagePosts
@@ -132,6 +133,7 @@ nonisolated enum APIEndpoint: Sendable {
         case .blockedUsers: return "/moderation/blocks"
         case .musicPersonality: return "/users/me/music-personality"
         case .musicPersonalityVisibility: return "/users/me/music-personality/visibility"
+        case .stanCard(let userId): return "/communities/user/\(userId)/stan-card"
         case .reportContent: return "/moderation/report"
 
         // Image Posts
