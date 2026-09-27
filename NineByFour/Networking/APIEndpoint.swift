@@ -51,6 +51,8 @@ nonisolated enum APIEndpoint: Sendable {
     case musicPersonality
     case musicPersonalityVisibility
     case stanCard(userId: Int)
+    case myCrates
+    case myQuarterlyPicks
 
     // MARK: - Image Posts
     case imagePosts
@@ -134,6 +136,8 @@ nonisolated enum APIEndpoint: Sendable {
         case .musicPersonality: return "/users/me/music-personality"
         case .musicPersonalityVisibility: return "/users/me/music-personality/visibility"
         case .stanCard(let userId): return "/communities/user/\(userId)/stan-card"
+        case .myCrates: return "/crates/mine"
+        case .myQuarterlyPicks: return "/quarterly-picks/me"
         case .reportContent: return "/moderation/report"
 
         // Image Posts

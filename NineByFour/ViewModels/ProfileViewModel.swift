@@ -8,6 +8,8 @@ final class ProfileViewModel {
     var following: [FollowUser] = []
     var tasteSuggestions: [TasteSuggestion] = []
     var stanRanks: [StanRank] = []
+    var crates: [Crate] = []
+    var quarterlyPicks: QuarterlyPicksResponse?
     var isLoading = false
     var errorMessage: String?
 
@@ -41,6 +43,19 @@ final class ProfileViewModel {
                 daysAsMember: rank?.daysAsMember
             )
         }
+    }
+
+    @MainActor
+    func loadCrates() async {
+        // Both of these are additive sections on a profile that renders
+        // without them, so a failure is silence rather than an error state.
+        let response: CratesResponse? = try? await APIClient.shared.request(endpoint: .myCrates)
+        crates = response?.crates ?? []
+    }
+
+    @MainActor
+    func loadQuarterlyPicks() async {
+        quarterlyPicks = try? await APIClient.shared.request(endpoint: .myQuarterlyPicks)
     }
 
     @MainActor
