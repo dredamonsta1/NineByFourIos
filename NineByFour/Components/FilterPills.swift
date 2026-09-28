@@ -29,9 +29,11 @@ struct FilterPills: View {
     /// Coast". Tapping any of them returns an empty list. See backlog.
     ///
     /// Counts at time of writing: East Coast 1783, South 553, West Coast 543,
-    /// Midwest 459, NY 1231, Georgia 115, UK 77.
+    /// Midwest 459, NY 1231, Georgia 115, UK 80, LA 12.
+    /// Identical to the web's list (9by4app #180) so both platforms filter
+    /// the same way.
     private static let regions = [
-        "East Coast", "West Coast", "South", "Midwest", "NY", "Georgia", "UK",
+        "East Coast", "West Coast", "South", "Midwest", "NY", "Georgia", "LA", "UK",
     ]
 
     var body: some View {
