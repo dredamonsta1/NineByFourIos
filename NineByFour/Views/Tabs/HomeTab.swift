@@ -4,11 +4,6 @@ struct HomeTab: View {
     @State private var viewModel = ArtistListViewModel()
     @State private var selectedArtistId: Int?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
     var body: some View {
         NavigationStack {
             ZStack {
@@ -22,26 +17,41 @@ struct HomeTab: View {
                     }
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 12) {
+                        LazyVStack(spacing: 2) {
                             SearchBar(text: $viewModel.searchText)
                                 .padding(.horizontal, 16)
                                 .onChange(of: viewModel.searchText) {
                                     Task { await viewModel.search() }
                                 }
 
-                            LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(viewModel.artists) { artist in
-                                    ArtistCard(artist: artist) {
-                                        selectedArtistId = artist.artistId
-                                    }
-                                    .onAppear {
-                                        if artist.id == viewModel.artists.last?.id {
-                                            Task { await viewModel.loadMore() }
-                                        }
+                            // The feedback loop, not a convenience. Tap a
+                            // genre, watch the ranking change.
+                            FilterPills(selection: $viewModel.filter) { filter in
+                                Task { await viewModel.apply(filter: filter) }
+                            }
+                            .padding(.bottom, 6)
+
+                            if viewModel.artists.isEmpty && !viewModel.isLoading {
+                                Text("Nothing here yet. Try another filter.")
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.Theme.textSecondary)
+                                    .padding(.top, 40)
+                            }
+
+                            // Rank is positional within the current result
+                            // set, which is what a filtered ranking means:
+                            // "#1 in Drill", not "#1 overall, filtered".
+                            ForEach(Array(viewModel.artists.enumerated()), id: \.element.id) { index, artist in
+                                RankedArtistRow(rank: index + 1, artist: artist) {
+                                    selectedArtistId = artist.artistId
+                                }
+                                .padding(.horizontal, 4)
+                                .onAppear {
+                                    if artist.id == viewModel.artists.last?.id {
+                                        Task { await viewModel.loadMore() }
                                     }
                                 }
                             }
-                            .padding(.horizontal, 16)
                         }
                         .padding(.bottom, 16)
                     }
@@ -50,7 +60,7 @@ struct HomeTab: View {
                     }
                 }
             }
-            .navigationTitle("Artists")
+            .navigationTitle("Rankings")
             .brandedNavBar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(item: Binding(

@@ -1,10 +1,27 @@
 import Foundation
 import Observation
 
+/// Which filter pill is active. Exactly one at a time, matching the web —
+/// the pills are a browse mechanism, not a query builder.
+enum ArtistFilter: Equatable {
+    case all
+    case genre(String)
+    case region(String)
+
+    var queryItem: URLQueryItem? {
+        switch self {
+        case .all: return nil
+        case .genre(let g): return URLQueryItem(name: "genre", value: g)
+        case .region(let r): return URLQueryItem(name: "region", value: r)
+        }
+    }
+}
+
 @Observable
 final class ArtistListViewModel {
     var artists: [Artist] = []
     var searchText = ""
+    var filter: ArtistFilter = .all
     var isLoading = false
     var errorMessage: String?
     var currentPage = 1
@@ -12,86 +29,74 @@ final class ArtistListViewModel {
 
     private var isLoadingMore = false
 
+    /// One place that builds the query.
+    ///
+    /// This used to be three near-identical copies, and they had already
+    /// drifted: loadArtists() omitted the search term while loadMore()
+    /// included it, so paginating a search silently changed what was being
+    /// asked for. A filter added to three copies would drift the same way.
+    private func queryItems(page: Int) -> [URLQueryItem] {
+        var items = [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "limit", value: "\(AppConstants.defaultPageSize)"),
+        ]
+        let trimmed = searchText.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            items.append(URLQueryItem(name: "search", value: trimmed))
+        }
+        // Searching is a deliberate act and should not be silently narrowed
+        // by a pill the user tapped a minute ago.
+        else if let filterItem = filter.queryItem {
+            items.append(filterItem)
+        }
+        return items
+    }
+
     @MainActor
-    func loadArtists() async {
-        isLoading = true
-        errorMessage = nil
-        currentPage = 1
+    private func load(page: Int, replacing: Bool) async {
+        if replacing { isLoading = true; errorMessage = nil } else { isLoadingMore = true }
+        defer { if replacing { isLoading = false } else { isLoadingMore = false } }
 
         do {
-            let queryItems = [
-                URLQueryItem(name: "page", value: "1"),
-                URLQueryItem(name: "limit", value: "\(AppConstants.defaultPageSize)")
-            ]
             let response: PaginatedArtistResponse = try await APIClient.shared.request(
                 endpoint: .artists,
-                queryItems: queryItems
+                queryItems: queryItems(page: page)
             )
-            artists = response.artists
+            if replacing {
+                artists = response.artists
+                currentPage = 1
+            } else {
+                artists.append(contentsOf: response.artists)
+                currentPage = page
+            }
             hasMore = response.hasMore ?? (response.artists.count >= AppConstants.defaultPageSize)
         } catch let error as APIError {
-            errorMessage = error.errorDescription
+            // Pagination failures stay quiet — the list already on screen is
+            // still valid, and an error banner over it would be worse.
+            if replacing { errorMessage = error.errorDescription }
         } catch {
-            errorMessage = "Failed to load artists."
+            if replacing { errorMessage = "Failed to load artists." }
         }
+    }
 
-        isLoading = false
+    @MainActor
+    func loadArtists() async { await load(page: 1, replacing: true) }
+
+    @MainActor
+    func search() async { await load(page: 1, replacing: true) }
+
+    @MainActor
+    func apply(filter newFilter: ArtistFilter) async {
+        filter = newFilter
+        // Clearing the search is what makes the pill feel like it did
+        // something; leaving a stale term would show an unrelated result set.
+        searchText = ""
+        await load(page: 1, replacing: true)
     }
 
     @MainActor
     func loadMore() async {
         guard !isLoadingMore, hasMore else { return }
-        isLoadingMore = true
-
-        let nextPage = currentPage + 1
-        do {
-            var queryItems = [
-                URLQueryItem(name: "page", value: "\(nextPage)"),
-                URLQueryItem(name: "limit", value: "\(AppConstants.defaultPageSize)")
-            ]
-            if !searchText.isEmpty {
-                queryItems.append(URLQueryItem(name: "search", value: searchText))
-            }
-            let response: PaginatedArtistResponse = try await APIClient.shared.request(
-                endpoint: .artists,
-                queryItems: queryItems
-            )
-            artists.append(contentsOf: response.artists)
-            currentPage = nextPage
-            hasMore = response.hasMore ?? (response.artists.count >= AppConstants.defaultPageSize)
-        } catch {
-            // Silently fail on pagination errors
-        }
-
-        isLoadingMore = false
-    }
-
-    @MainActor
-    func search() async {
-        isLoading = true
-        errorMessage = nil
-        currentPage = 1
-
-        do {
-            var queryItems = [
-                URLQueryItem(name: "page", value: "1"),
-                URLQueryItem(name: "limit", value: "\(AppConstants.defaultPageSize)")
-            ]
-            if !searchText.isEmpty {
-                queryItems.append(URLQueryItem(name: "search", value: searchText))
-            }
-            let response: PaginatedArtistResponse = try await APIClient.shared.request(
-                endpoint: .artists,
-                queryItems: queryItems
-            )
-            artists = response.artists
-            hasMore = response.hasMore ?? (response.artists.count >= AppConstants.defaultPageSize)
-        } catch let error as APIError {
-            errorMessage = error.errorDescription
-        } catch {
-            errorMessage = "Search failed."
-        }
-
-        isLoading = false
+        await load(page: currentPage + 1, replacing: false)
     }
 }
