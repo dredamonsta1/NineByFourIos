@@ -274,6 +274,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "StanBox uses the camera to record videos you post.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "StanBox uses the microphone to record sound for videos you post.";
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -311,6 +312,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "StanBox uses the camera to record videos you post.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "StanBox uses the microphone to record sound for videos you post.";
 				INFOPLIST_KEY_UIBackgroundModes = audio;
