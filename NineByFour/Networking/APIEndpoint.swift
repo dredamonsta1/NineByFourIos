@@ -60,9 +60,10 @@ nonisolated enum APIEndpoint: Sendable {
     case deleteImagePost(id: Int)
 
     // MARK: - Videos
-    case youtubeFeed
-    case combinedVideoFeed
-    case musicVideos
+    // Story 31: platform uploads. The YouTube endpoints these replaced
+    // (/art/youtube-feed, /art/combined-video-feed, /art/music-videos) were
+    // deleted on 2026-09-13 and returned 404.
+    case videos
 
     // MARK: - Music
     case upcomingReleases
@@ -146,9 +147,7 @@ nonisolated enum APIEndpoint: Sendable {
         case .deleteImagePost(let id): return "/image-posts/\(id)"
 
         // Videos
-        case .youtubeFeed: return "/art/youtube-feed"
-        case .combinedVideoFeed: return "/art/combined-video-feed"
-        case .musicVideos: return "/art/music-videos"
+        case .videos: return "/videos"
 
         // Music
         case .upcomingReleases: return "/music/upcoming"
@@ -189,10 +188,20 @@ nonisolated enum APIEndpoint: Sendable {
     var requiresAuth: Bool {
         switch self {
         case .requestCode, .verifyCode, .waitlistJoin, .waitlistVerify,
-             .albumPreview, .liveRecordings, .liveRecordingTracks:
+             .albumPreview, .liveRecordings, .liveRecordingTracks, .videos:
             return false
         default:
             return true
+        }
+    }
+
+    /// Public endpoints that still read the token when there is one — e.g.
+    /// /videos is browsable signed-out, but signed-in viewers need it sent so
+    /// blocks are respected and the Following tab works.
+    var attachesAuthWhenAvailable: Bool {
+        switch self {
+        case .videos: return true
+        default: return false
         }
     }
 

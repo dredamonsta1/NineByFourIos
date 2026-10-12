@@ -15,6 +15,8 @@ struct FeedPost: Codable, Identifiable, Sendable {
     var caption: String?
     var videoUrl: String?
     var videoType: String?
+    /// MP4 of the same upload (Story 31) — Chrome records WebM, which iOS can't play.
+    var playbackUrl: String?
     let postType: PostType
     let createdAt: String
     var username: String?
@@ -40,6 +42,7 @@ struct FeedPost: Codable, Identifiable, Sendable {
         case caption
         case videoUrl = "video_url"
         case videoType = "video_type"
+        case playbackUrl = "playback_url"
         case postType = "post_type"
         case createdAt = "created_at"
         case username

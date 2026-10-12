@@ -1,88 +1,67 @@
 import Foundation
 
-struct VideoPost: Codable, Identifiable, Sendable {
+/// A video uploaded to StanBox — GET /api/videos (Story 31).
+/// YouTube was removed on 2026-09-13; these are platform uploads only.
+struct PlatformVideo: Codable, Identifiable, Hashable, Sendable {
     let id: Int
-    var userId: Int?
-    let videoUrl: String
-    let videoType: String
-    var caption: String?
-    var thumbnailUrl: String?
-    let createdAt: String
+    let userId: Int
     var username: String?
-    var source: String?
+    var profileImage: String?
+    var title: String?
+    var caption: String?
+    let videoUrl: String
+    /// The same upload served as MP4. Chrome records WebM, which iOS can't
+    /// play, so always prefer this.
+    var playbackUrl: String?
+    var thumbnailUrl: String?
+    var isMusicVideo: Bool
+    let createdAt: String
 
     enum CodingKeys: String, CodingKey {
         case id
         case userId = "user_id"
-        case videoUrl = "video_url"
-        case videoType = "video_type"
-        case caption
-        case thumbnailUrl = "thumbnail_url"
-        case createdAt = "created_at"
         case username
-        case source
+        case profileImage = "profile_image"
+        case title
+        case caption
+        case videoUrl = "video_url"
+        case playbackUrl = "playback_url"
+        case thumbnailUrl = "thumbnail_url"
+        case isMusicVideo = "is_music_video"
+        case createdAt = "created_at"
+    }
+
+    var displayTitle: String {
+        if let title, !title.isEmpty { return title }
+        if let caption, !caption.isEmpty { return caption }
+        return "Untitled video"
+    }
+
+    var playURL: URL? { URL(string: playbackUrl ?? videoUrl) }
+
+    var posterURL: URL? {
+        if let thumbnailUrl, let url = URL(string: thumbnailUrl) { return url }
+        return PlatformVideo.posterURL(for: playbackUrl ?? videoUrl)
+    }
+
+    /// Cloudinary serves a frame of any uploaded video as a JPG at the same
+    /// path with a .jpg extension. Nil for anything else.
+    static func posterURL(for videoURL: String?) -> URL? {
+        guard let videoURL, videoURL.contains("res.cloudinary.com"), videoURL.contains("/video/upload/") else { return nil }
+        guard let dot = videoURL.lastIndex(of: "."), let slash = videoURL.lastIndex(of: "/"), dot > slash else {
+            return URL(string: videoURL + ".jpg")
+        }
+        return URL(string: String(videoURL[..<dot]) + ".jpg")
     }
 }
 
-/// Response model for /art/music-videos and /art/youtube-feed
-struct YouTubeVideo: Codable, Sendable {
-    let videoId: String
-    let title: String
-    var thumbnail: String?
-    var artist: String?
-    var publishedAt: String?
-    var channelTitle: String?
-}
+/// A page of GET /api/videos.
+struct VideosPage: Codable, Sendable {
+    let videos: [PlatformVideo]
+    let nextBefore: Int?
 
-/// Unified display model for the Discover tab video list
-struct DiscoverVideo: Identifiable, Sendable {
-    let id: String
-    let youtubeId: String
-    let title: String
-    var thumbnailUrl: String?
-    var username: String?
-    var createdAt: String?
-    var source: String
-
-    /// Create from a YouTube API response
-    static func fromYouTube(_ yt: YouTubeVideo, source: String) -> DiscoverVideo {
-        DiscoverVideo(
-            id: "\(source)-\(yt.videoId)",
-            youtubeId: yt.videoId,
-            title: yt.title,
-            thumbnailUrl: yt.thumbnail,
-            username: yt.artist ?? yt.channelTitle,
-            createdAt: yt.publishedAt,
-            source: source
-        )
-    }
-
-    /// Create from a VideoPost (combined-video-feed)
-    static func fromVideoPost(_ vp: VideoPost) -> DiscoverVideo {
-        let ytId = extractYouTubeId(from: vp.videoUrl) ?? vp.videoUrl
-        return DiscoverVideo(
-            id: "combined-\(vp.id)",
-            youtubeId: ytId,
-            title: vp.caption ?? "",
-            thumbnailUrl: vp.thumbnailUrl ?? "https://img.youtube.com/vi/\(ytId)/hqdefault.jpg",
-            username: vp.username,
-            createdAt: vp.createdAt,
-            source: vp.source ?? "combined"
-        )
-    }
-
-    private static func extractYouTubeId(from url: String) -> String? {
-        if let components = URLComponents(string: url),
-           let queryItem = components.queryItems?.first(where: { $0.name == "v" }) {
-            return queryItem.value
-        }
-        if url.contains("youtu.be/") {
-            return url.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first
-        }
-        // If it doesn't look like a URL, it's probably already a video ID
-        if !url.contains("/") && !url.contains(".") {
-            return url
-        }
-        return nil
+    enum CodingKeys: String, CodingKey {
+        case videos
+        case nextBefore = "next_before"
     }
 }

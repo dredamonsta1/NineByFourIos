@@ -57,6 +57,8 @@ actor APIClient {
 
         if endpoint.requiresAuth {
             try injectAuth(&request)
+        } else if endpoint.attachesAuthWhenAvailable, let token = KeychainHelper.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         let (data, response) = try await performRequest(request)
@@ -85,6 +87,8 @@ actor APIClient {
 
         if endpoint.requiresAuth {
             try injectAuth(&request)
+        } else if endpoint.attachesAuthWhenAvailable, let token = KeychainHelper.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         return request

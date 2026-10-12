@@ -141,9 +141,11 @@ struct FeedPostCard: View {
                 }
 
             case .video:
-                if let videoUrl = post.videoUrl, let videoId = extractYouTubeId(from: videoUrl) {
-                    YouTubePlayerView(videoId: videoId)
-                        .frame(height: 200)
+                // Uploaded video, played natively. This used to handle only
+                // YouTube links, so uploads showed nothing on iPhone.
+                if let url = URL(string: post.playbackUrl ?? post.videoUrl ?? "") {
+                    PlatformVideoPlayer(url: url)
+                        .frame(height: 220)
                         .cornerRadius(10)
                 }
                 if let caption = post.caption, !caption.isEmpty {
@@ -197,17 +199,6 @@ struct FeedPostCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.Theme.borderDefault, lineWidth: 1)
         )
-    }
-
-    private func extractYouTubeId(from url: String) -> String? {
-        if let components = URLComponents(string: url),
-           let queryItem = components.queryItems?.first(where: { $0.name == "v" }) {
-            return queryItem.value
-        }
-        if url.contains("youtu.be/") {
-            return url.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first
-        }
-        return nil
     }
 }
 
