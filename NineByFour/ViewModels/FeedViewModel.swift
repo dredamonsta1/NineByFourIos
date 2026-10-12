@@ -13,6 +13,12 @@ final class FeedViewModel {
     var musicStreamUrl = ""
     var musicCaption = ""
 
+    // Video post creation state
+    var videoTitle = ""
+    var videoCaption = ""
+    var isMusicVideo = false
+    var isPostingVideo = false
+
     @MainActor
     func loadFeed() async {
         isLoading = true
@@ -74,6 +80,43 @@ final class FeedViewModel {
         }
     }
 
+    /// Uploads a video file. Re-encodes it to MP4 first (see VideoExport),
+    /// so the file sent is always H.264 regardless of what the camera wrote.
+    @MainActor
+    func createVideoPost(fileURL: URL) async -> Bool {
+        isPostingVideo = true
+        errorMessage = nil
+        defer { isPostingVideo = false }
+
+        do {
+            let mp4 = try await VideoExport.mp4(from: fileURL)
+            defer { try? FileManager.default.removeItem(at: mp4) }
+            let data = try Data(contentsOf: mp4)
+
+            var formData = MultipartFormData()
+            formData.addFile(named: "video", fileName: "video.mp4", mimeType: "video/mp4", data: data)
+            let title = videoTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty { formData.addField(named: "title", value: String(title.prefix(120))) }
+            let caption = videoCaption.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !caption.isEmpty { formData.addField(named: "caption", value: caption) }
+            formData.addField(named: "content_type", value: isMusicVideo ? "Music Video" : "Video")
+
+            let _: UploadedPost = try await APIClient.shared.upload(endpoint: .feedVideo, formData: formData)
+            videoTitle = ""
+            videoCaption = ""
+            isMusicVideo = false
+            await loadFeed()
+            return true
+        } catch let error as VideoExportError {
+            errorMessage = error.errorDescription
+        } catch let error as APIError {
+            errorMessage = error.errorDescription ?? "Failed to post video."
+        } catch {
+            errorMessage = "Failed to post video."
+        }
+        return false
+    }
+
     @MainActor
     /// Drops every post by a blocked user from the in-memory feed.
     ///
@@ -94,6 +137,9 @@ final class FeedViewModel {
         }
     }
 }
+
+/// The upload's response is only checked for success; the feed reloads after.
+private struct UploadedPost: Decodable {}
 
 private struct TextPostBody: Encodable {
     let content: String
