@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One of five ranked releases for a calendar quarter.
+/// One of five ranked albums for a calendar quarter.
 struct QuarterlyPick: Codable, Identifiable, Sendable {
     let albumId: Int
     let albumName: String
@@ -67,7 +67,7 @@ struct QuarterlyPicksSection: View {
                     row(pick)
                 }
             } else {
-                Text("Pick five releases on the web and they'll appear here.")
+                Text("Pick five albums on the web and they'll appear here.")
                     .font(.footnote)
                     .foregroundStyle(Color.Theme.textSecondary)
             }
