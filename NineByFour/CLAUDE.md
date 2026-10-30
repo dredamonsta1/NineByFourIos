@@ -12,9 +12,21 @@ Native SwiftUI iOS app for **9by4** — a music artist social platform. Consumes
 # Build for simulator
 xcodebuild -scheme NineByFour -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' build
 
+# Run the tests (Swift Testing, NineByFourTests target)
+xcodebuild test -scheme NineByFour -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2'
+
 # Open in Xcode
 open NineByFour.xcodeproj
 ```
+
+## Tests
+
+`NineByFourTests/` is a unit-test target hosted in the app, written with Swift Testing (`import Testing`, `@Test`, `#expect`). The folder is synced, so a new file there is picked up without editing the project.
+
+- **Never hit the real API.** `Support/StubURLProtocol.swift` intercepts every request APIClient makes (it uses `URLSession.shared`), and anything without a stub fails. Suites that use it are `@Suite(.serialized)` because the stubs are shared.
+- **Decode real responses.** `Support/Fixtures.swift` holds trimmed copies of real API responses. When a model changes, decode a fresh response, not a hand-written one: that's how the `hasMore` paging keys were found to have never matched the server.
+- **Test the whole path.** For anything that sends data, assert the requests that went out (`StubURLProtocol.calls`), not just the view model's state.
+- Suites are `@MainActor`: the app target defaults to MainActor isolation, so its models' Codable conformances are main-actor isolated.
 
 ## Architecture
 
@@ -45,7 +57,7 @@ NineByFour/
 │   ├── ImagePost.swift / VideoPost.swift
 │   ├── Conversation.swift / Message.swift
 │   ├── FollowUser.swift
-│   ├── CloutResponse.swift
+│   ├── ProfileListChangeResponse.swift  # Top 20 add/remove reply (new clout)
 │   ├── UpcomingRelease.swift
 │   ├── WaitlistEntry.swift
 │   ├── AdminStats.swift
