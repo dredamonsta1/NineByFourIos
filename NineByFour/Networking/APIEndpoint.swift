@@ -22,8 +22,6 @@ nonisolated enum APIEndpoint: Sendable {
     // MARK: - Artists (read-only on iOS — artist-side management is web)
     case artists
     case artist(id: Int)
-    case clout(id: Int)
-    case removeClout(id: Int)
 
     // MARK: - Albums (Pillar B commerce)
     case albumStream(id: Int)
@@ -113,8 +111,6 @@ nonisolated enum APIEndpoint: Sendable {
         // Artists
         case .artists: return "/artists"
         case .artist(let id): return "/artists/\(id)"
-        case .clout(let id): return "/artists/\(id)/clout"
-        case .removeClout(let id): return "/artists/\(id)/clout/remove"
 
         // Albums
         case .albumStream(let id): return "/albums/\(id)/stream"
@@ -215,9 +211,6 @@ nonisolated enum APIEndpoint: Sendable {
              .waitlistJoin, .waitlistVerify, .createEvent,
              .blockUser, .reportContent, .musicPersonality:
             return .POST
-
-        case .clout, .removeClout:
-            return .PUT
 
         case .markConversationRead, .musicPersonalityVisibility:
             return .PATCH

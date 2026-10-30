@@ -66,35 +66,23 @@ struct ArtistDetailSheet: View {
                                         if let url = nonEmptyURL(artist.newsletterUrl) {
                                             WorldLink(label: "Newsletter", systemImage: "envelope", url: url)
                                         }
-                                        if let url = nonEmptyURL(artist.spotifyUrl) {
-                                            WorldLink(label: "Spotify", systemImage: "play.circle.fill", url: url, tint: Color.Theme.spotify)
-                                        }
-                                        if let url = nonEmptyURL(artist.appleMusicUrl) {
-                                            WorldLink(label: "Apple Music", systemImage: "applelogo", url: url, tint: Color.Theme.appleMusic)
-                                        }
                                     }
                                 }
 
-                                // Clout + Top 20 buttons
+                                // Clout + Top 20. Clout is how many Top 20s the artist
+                                // is in, counted on the server, so it's a number to read,
+                                // not a button: the way to give clout is the Top 20 button.
                                 HStack(spacing: 8) {
-                                    Button {
-                                        Task { await viewModel.toggleClout(isAuthenticated: authManager.isAuthenticated) }
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: viewModel.hasClout ? "flame.fill" : "flame")
-                                            Text("\(artist.count ?? 0)")
-                                        }
-                                        .font(.subheadline.bold())
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(viewModel.hasClout ? Color.Theme.hot : Color.clear)
-                                        .foregroundStyle(viewModel.hasClout ? .white : Color.Theme.hot)
-                                        .cornerRadius(20)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .stroke(Color.Theme.hot, lineWidth: viewModel.hasClout ? 0 : 1)
-                                        )
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "flame.fill")
+                                        Text("\(artist.count ?? 0)")
                                     }
+                                    .font(.subheadline.bold())
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .foregroundStyle(Color.Theme.hot)
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityLabel("Clout \(artist.count ?? 0)")
 
                                     if authManager.isAuthenticated {
                                         TopTwentyButton(viewModel: viewModel, isAuthenticated: authManager.isAuthenticated)
@@ -156,8 +144,6 @@ struct ArtistDetailSheet: View {
         nonEmptyURL(artist.websiteUrl) != nil
             || nonEmptyURL(artist.merchUrl) != nil
             || nonEmptyURL(artist.newsletterUrl) != nil
-            || nonEmptyURL(artist.spotifyUrl) != nil
-            || nonEmptyURL(artist.appleMusicUrl) != nil
     }
 
     private func nonEmptyURL(_ raw: String?) -> URL? {
@@ -272,18 +258,6 @@ private struct AlbumRow: View {
     @Bindable var viewModel: ArtistDetailViewModel
     let authManager: AuthManager
 
-    private var spotifyURL: URL? {
-        guard let raw = album.spotifyUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !raw.isEmpty else { return nil }
-        return URL(string: raw)
-    }
-
-    private var appleMusicURL: URL? {
-        guard let raw = album.appleMusicUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !raw.isEmpty else { return nil }
-        return URL(string: raw)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
@@ -314,19 +288,11 @@ private struct AlbumRow: View {
             }
 
             let hasPreview = !(album.audioCloudinaryPublicId?.isEmpty ?? true)
-            if spotifyURL != nil || appleMusicURL != nil || hasPreview {
-                HStack(spacing: 8) {
-                    if hasPreview {
-                        AlbumPreviewButton(album: album)
-                    }
-                    if let url = spotifyURL {
-                        AlbumLinkButton(label: "Spotify", systemImage: "play.circle.fill", url: url, tint: Color.Theme.spotify)
-                    }
-                    if let url = appleMusicURL {
-                        AlbumLinkButton(label: "Apple Music", systemImage: "applelogo", url: url, tint: Color.Theme.appleMusic)
-                    }
-                }
-                .padding(.leading, 62)
+            // No Spotify / Apple Music link-outs: they send fans off the
+            // platform (web dropped them in 9by4app #195).
+            if hasPreview {
+                AlbumPreviewButton(album: album)
+                    .padding(.leading, 62)
             }
 
         }
@@ -430,27 +396,6 @@ private struct AlbumPreviewButton: View {
         } catch {
             previewError = "Couldn't fetch the preview. Check your connection."
             showPreviewError = true
-        }
-    }
-}
-
-private struct AlbumLinkButton: View {
-    let label: String
-    let systemImage: String
-    let url: URL
-    let tint: Color
-
-    var body: some View {
-        Link(destination: url) {
-            HStack(spacing: 4) {
-                Image(systemName: systemImage).font(.caption2)
-                Text(label).font(.caption2.weight(.semibold))
-            }
-            .foregroundStyle(tint)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(tint.opacity(0.12))
-            .cornerRadius(10)
         }
     }
 }

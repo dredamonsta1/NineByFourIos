@@ -119,10 +119,13 @@ final class ProfileViewModel {
         guard !isListFull, !profileListIds.contains(artist.artistId) else { return }
 
         do {
-            try await APIClient.shared.requestVoid(endpoint: .addToProfileList(artistId: artist.artistId))
-            let cloutResponse: CloutResponse = try await APIClient.shared.request(endpoint: .clout(id: artist.artistId))
+            // The server counts the clout and returns the new total; there's
+            // no separate clout call (clients can't set clout).
+            let response: ProfileListChangeResponse = try await APIClient.shared.request(
+                endpoint: .addToProfileList(artistId: artist.artistId)
+            )
             var updatedArtist = artist
-            updatedArtist.count = cloutResponse.newCloutCount
+            updatedArtist.count = response.clout ?? (artist.count ?? 0) + 1
             profileList.append(updatedArtist)
         } catch {
             // Silently fail

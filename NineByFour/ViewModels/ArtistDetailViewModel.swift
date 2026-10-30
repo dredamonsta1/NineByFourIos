@@ -6,7 +6,6 @@ final class ArtistDetailViewModel {
     var artist: Artist?
     var isLoading = false
     var errorMessage: String?
-    var hasClout = false
     var isInProfileList = false
     var profileListCount = 0
     var isAddingToProfileList = false
@@ -59,49 +58,17 @@ final class ArtistDetailViewModel {
         profileListCount += 1
 
         do {
-            try await APIClient.shared.requestVoid(
+            // The server counts the clout and returns the new total.
+            let response: ProfileListChangeResponse = try await APIClient.shared.request(
                 endpoint: .addToProfileList(artistId: artist.artistId)
             )
+            if let clout = response.clout { self.artist?.count = clout }
         } catch {
             isInProfileList = false
             profileListCount = max(0, profileListCount - 1)
         }
 
         isAddingToProfileList = false
-    }
-
-    @MainActor
-    func toggleClout(isAuthenticated: Bool) async {
-        guard isAuthenticated, let artist = artist else { return }
-
-        do {
-            if hasClout {
-                let response: CloutResponse = try await APIClient.shared.request(
-                    endpoint: .removeClout(id: artist.artistId)
-                )
-                self.artist?.count = response.newCloutCount
-                hasClout = false
-            } else {
-                let response: CloutResponse = try await APIClient.shared.request(
-                    endpoint: .clout(id: artist.artistId)
-                )
-                self.artist?.count = response.newCloutCount
-                hasClout = true
-
-                // Also add to profile list if not already there and there's room.
-                // The explicit "+ Top 20" button on the sheet handles the list-full
-                // messaging; clout should never silently overfill the list.
-                if !isInProfileList && !isProfileListFull {
-                    try? await APIClient.shared.requestVoid(
-                        endpoint: .addToProfileList(artistId: artist.artistId)
-                    )
-                    isInProfileList = true
-                    profileListCount += 1
-                }
-            }
-        } catch {
-            // Silently fail
-        }
     }
 }
 
