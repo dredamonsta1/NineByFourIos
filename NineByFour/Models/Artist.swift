@@ -54,8 +54,10 @@ struct PaginatedArtistResponse: Codable, Sendable {
         case artists
         case page
         case limit
-        case totalCount = "total_count"
-        case totalPages = "total_pages"
-        case hasMore = "has_more"
+        // The server sends these camelCase (GET /api/artists). They were
+        // snake_case here and always decoded as nil.
+        case totalCount
+        case totalPages
+        case hasMore
     }
 }
