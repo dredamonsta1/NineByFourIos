@@ -240,6 +240,8 @@ struct ProfileTab: View {
                                     .padding(.vertical, 10)
                             }
                             .padding(.top, 4)
+
+                            AboutLinks()
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
