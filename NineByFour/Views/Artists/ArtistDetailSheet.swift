@@ -72,17 +72,21 @@ struct ArtistDetailSheet: View {
                                 // Clout + Top 20. Clout is how many Top 20s the artist
                                 // is in, counted on the server, so it's a number to read,
                                 // not a button: the way to give clout is the Top 20 button.
+                                // Hidden below PublicCount.threshold: a small number
+                                // reads as "nobody is here".
                                 HStack(spacing: 8) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "flame.fill")
-                                        Text("\(artist.count ?? 0)")
+                                    if PublicCount.shows(artist.count) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "flame.fill")
+                                            Text("\(artist.count ?? 0)")
+                                        }
+                                        .font(.subheadline.bold())
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .foregroundStyle(Color.Theme.hot)
+                                        .accessibilityElement(children: .combine)
+                                        .accessibilityLabel("Clout \(artist.count ?? 0)")
                                     }
-                                    .font(.subheadline.bold())
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .foregroundStyle(Color.Theme.hot)
-                                    .accessibilityElement(children: .combine)
-                                    .accessibilityLabel("Clout \(artist.count ?? 0)")
 
                                     if authManager.isAuthenticated {
                                         TopTwentyButton(viewModel: viewModel, isAuthenticated: authManager.isAuthenticated)
