@@ -49,30 +49,33 @@ struct UserProfileView: View {
                             }
                             .padding(.top, 8)
 
-                            // Stats row
-                            HStack(spacing: 32) {
-                                VStack(spacing: 4) {
-                                    Text("\(followers.count)")
-                                        .font(.headline)
-                                        .foregroundStyle(Color.Theme.textBright)
-                                    Text("Followers")
-                                        .font(.caption)
-                                        .foregroundStyle(Color.Theme.textSecondary)
-                                }
+                            // Stats row: someone else's follower counts are public,
+                            // so they only show once one reaches PublicCount.threshold.
+                            if PublicCount.shows(followers.count) || PublicCount.shows(following.count) {
+                                HStack(spacing: 32) {
+                                    VStack(spacing: 4) {
+                                        Text("\(followers.count)")
+                                            .font(.headline)
+                                            .foregroundStyle(Color.Theme.textBright)
+                                        Text("Followers")
+                                            .font(.caption)
+                                            .foregroundStyle(Color.Theme.textSecondary)
+                                    }
 
-                                VStack(spacing: 4) {
-                                    Text("\(following.count)")
-                                        .font(.headline)
-                                        .foregroundStyle(Color.Theme.textBright)
-                                    Text("Following")
-                                        .font(.caption)
-                                        .foregroundStyle(Color.Theme.textSecondary)
+                                    VStack(spacing: 4) {
+                                        Text("\(following.count)")
+                                            .font(.headline)
+                                            .foregroundStyle(Color.Theme.textBright)
+                                        Text("Following")
+                                            .font(.caption)
+                                            .foregroundStyle(Color.Theme.textSecondary)
+                                    }
                                 }
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.Theme.bgCard)
+                                .cornerRadius(12)
                             }
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .background(Color.Theme.bgCard)
-                            .cornerRadius(12)
 
                             // Artist list
                             VStack(alignment: .leading, spacing: 10) {
