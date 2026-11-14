@@ -66,7 +66,9 @@ struct LibraryTab: View {
             Text("Your library is empty")
                 .font(.headline)
                 .foregroundStyle(Color.Theme.textPrimary)
-            Text("Albums you buy on stanbox will show up here.")
+            // Says "own", not "buy". Pointing fans at a purchase outside the
+            // app is what Guideline 3.1.3 forbids for a reader-style library.
+            Text("Albums you own will show up here.")
                 .font(.subheadline)
                 .foregroundStyle(Color.Theme.textSecondary)
                 .multilineTextAlignment(.center)
