@@ -20,6 +20,10 @@ struct FeedPost: Codable, Identifiable, Sendable {
     let postType: PostType
     let createdAt: String
     var username: String?
+    // The author's photo and follower count (GET /api/feed). The count is
+    // raw; the card hides it below PublicCount.threshold.
+    var profileImage: String?
+    var followerCount: Int?
 
     // Music post fields
     var musicTitle: String?
@@ -46,6 +50,8 @@ struct FeedPost: Codable, Identifiable, Sendable {
         case postType = "post_type"
         case createdAt = "created_at"
         case username
+        case profileImage = "profile_image"
+        case followerCount = "follower_count"
         case musicTitle = "music_title"
         case audioUrl = "audio_url"
         case streamUrl = "stream_url"
