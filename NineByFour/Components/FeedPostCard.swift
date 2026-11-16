@@ -52,13 +52,40 @@ struct FeedPostCard: View {
         isBlocking = false
     }
 
+    // The author's photo, or the generic icon when they haven't set one.
+    // Agents keep their chip icon so they never pass for a person.
+    @ViewBuilder
+    private var authorAvatar: some View {
+        if post.isAgentPost == true {
+            Image(systemName: "cpu.fill")
+                .font(.title2)
+                .foregroundStyle(Color.Theme.textSecondary)
+        } else if let image = post.profileImage, !image.isEmpty {
+            CachedAsyncImage(url: image.fullImageURL, cornerRadius: 16)
+                .frame(width: 32, height: 32)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
+        } else {
+            Image(systemName: "person.circle.fill")
+                .font(.title2)
+                .foregroundStyle(Color.Theme.accent)
+        }
+    }
+
+    // "2h ago", plus "· 1,250 followers" once the author passes the public
+    // threshold. Agents have no followers to show.
+    private var headerSubtitle: String {
+        let time = post.createdAt.toDate()?.relativeString() ?? ""
+        guard post.isAgentPost != true, PublicCount.shows(post.followerCount),
+              let followers = post.followerCount else { return time }
+        return "\(time) · \(followers.formatted()) followers"
+    }
+
     private var cardBody: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Header
             HStack {
-                Image(systemName: post.isAgentPost == true ? "cpu.fill" : "person.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(post.isAgentPost == true ? Color.Theme.textSecondary : Color.Theme.accent)
+                authorAvatar
 
                 VStack(alignment: .leading, spacing: 2) {
                     Button {
@@ -69,7 +96,7 @@ struct FeedPostCard: View {
                             .foregroundStyle(Color.Theme.accent)
                     }
 
-                    Text(post.createdAt.toDate()?.relativeString() ?? "")
+                    Text(headerSubtitle)
                         .font(.caption2)
                         .foregroundStyle(Color.Theme.textSecondary)
                 }
