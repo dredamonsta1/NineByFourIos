@@ -28,6 +28,11 @@ struct FeedTab: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
+                            FeedComposerBar(user: authManager.currentUser) {
+                                showPostCreator = true
+                            }
+                            .padding(.top, 8)
+
                             ForEach(viewModel.posts) { post in
                                 FeedPostCard(
                                     post: post,
