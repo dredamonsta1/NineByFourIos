@@ -61,10 +61,7 @@ struct FeedPostCard: View {
                 .font(.title2)
                 .foregroundStyle(Color.Theme.textSecondary)
         } else if let image = post.profileImage, !image.isEmpty {
-            CachedAsyncImage(url: image.fullImageURL, cornerRadius: 16)
-                .frame(width: 32, height: 32)
-                .clipShape(Circle())
-                .accessibilityHidden(true)
+            UserAvatar(imagePath: image, name: post.username, size: 32)
         } else {
             Image(systemName: "person.circle.fill")
                 .font(.title2)
