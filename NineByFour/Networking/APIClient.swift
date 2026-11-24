@@ -135,11 +135,18 @@ actor APIClient {
         case 401:
             throw APIError.unauthorized
         case 403:
-            throw APIError.forbidden
+            throw APIError.forbidden(message: jsonMessage(from: data))
         default:
             let message = extractErrorMessage(from: data) ?? "Unknown error"
             throw APIError.httpError(statusCode: httpResponse.statusCode, message: message)
         }
+    }
+
+    /// The "message" field of a JSON error body, and nothing else: a 403
+    /// from a proxy can be an HTML page, which shouldn't reach the screen.
+    private func jsonMessage(from data: Data) -> String? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return json["message"] as? String
     }
 
     private func extractErrorMessage(from data: Data) -> String? {

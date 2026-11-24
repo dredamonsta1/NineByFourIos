@@ -53,29 +53,12 @@ struct LoginView: View {
                         codeForm
                     }
 
-                    // Sign-up was unreachable before this: RegisterView
-                    // existed but nothing presented it, so an approved
-                    // waitlist user with an invite code had no way to make
-                    // an account in the app.
-                    NavigationLink {
-                        RegisterView()
-                    } label: {
-                        Text("Have an invite code? ")
-                            .foregroundStyle(Color.Theme.textSecondary)
-                        + Text("Create account")
-                            .foregroundStyle(Color.Theme.accent)
+                    // Signup is invite-only, and testers kept skipping the
+                    // waitlist; the guide spells out the three steps in order.
+                    if viewModel.otpStep == .email {
+                        NewHereGuide()
+                            .padding(.top, 8)
                     }
-                    .font(.subheadline)
-
-                    NavigationLink {
-                        WaitlistView()
-                    } label: {
-                        Text("No invite code? ")
-                            .foregroundStyle(Color.Theme.textSecondary)
-                        + Text("Join the Waitlist")
-                            .foregroundStyle(Color.Theme.accent)
-                    }
-                    .font(.subheadline)
                 }
                 .padding(.horizontal, 24)
             }

@@ -33,7 +33,7 @@ struct RegisterView: View {
                         .foregroundStyle(Color.Theme.textPrimary)
 
                     Text(viewModel.otpStep == .email
-                         ? "You'll need an invite code. We'll email you a 6-digit code to finish."
+                         ? "Use the email you joined the waitlist with and the invite code we emailed you when you were approved."
                          : "We sent a 6-digit code to \(viewModel.email).")
                         .font(.subheadline)
                         .foregroundStyle(Color.Theme.textSecondary)
@@ -44,6 +44,16 @@ struct RegisterView: View {
                             .font(.footnote)
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
+
+                        // The usual cause is skipping the waitlist, so give
+                        // the way out right where the error is.
+                        NavigationLink {
+                            WaitlistView()
+                        } label: {
+                            Text("Not on the waitlist yet? Join it first →")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(Color.Theme.accentLight)
+                        }
                     }
 
                     if let info = viewModel.infoMessage {
