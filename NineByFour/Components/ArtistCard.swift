@@ -35,7 +35,8 @@ struct ArtistCard: View {
                                 .foregroundStyle(Color.Theme.textSecondary)
                         }
 
-                        if let count = artist.count, count > 0 {
+                        // Hidden below PublicCount.threshold, like every public count.
+                        if PublicCount.shows(artist.count), let count = artist.count {
                             Label("\(count)", systemImage: "flame.fill")
                                 .font(.caption2)
                                 .foregroundStyle(Color.Theme.hot)

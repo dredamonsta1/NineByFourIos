@@ -293,9 +293,14 @@ private struct AlbumRow: View {
 
             let hasPreview = !(album.audioCloudinaryPublicId?.isEmpty ?? true)
             // No Spotify / Apple Music link-outs: they send fans off the
-            // platform (web dropped them in 9by4app #195).
+            // platform (web dropped them in 9by4app #195). The one exception
+            // is the credit link Apple requires beside its own samples.
             if hasPreview {
                 AlbumPreviewButton(album: album)
+                    .padding(.leading, 62)
+            } else if let artistId = album.artistId ?? viewModel.artist?.artistId {
+                // Story 47: catalog releases get Apple Music's 30s sample.
+                AppleSampleButton(album: album, artistId: artistId)
                     .padding(.leading, 62)
             }
 
