@@ -37,6 +37,7 @@ final class AudioPlayer {
     init() {
         engine.attach(playerNode)
         configureRemoteCommands()
+        observeInterruptions()
     }
 
     // MARK: - Public API
@@ -121,6 +122,7 @@ final class AudioPlayer {
             isPlaying = false
         } else {
             do {
+                try configureSessionIfNeeded()
                 if !engine.isRunning { try engine.start() }
                 playerNode.play()
                 isPlaying = true
@@ -187,12 +189,62 @@ final class AudioPlayer {
 
     // MARK: - Engine + playback
 
+    /// Category once, but activation on every play: another app (a call,
+    /// Instagram, Music) can deactivate our session in between, and a
+    /// session that isn't active doesn't keep playing once the phone locks.
     private func configureSessionIfNeeded() throws {
-        guard !didConfigureSession else { return }
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playback, mode: .default, options: [])
+        if !didConfigureSession {
+            try session.setCategory(.playback, mode: .default, options: [])
+            didConfigureSession = true
+        }
         try session.setActive(true)
-        didConfigureSession = true
+    }
+
+    // MARK: - Interruptions
+
+    /// A call or Siri stops the engine. Without this, the UI kept showing
+    /// "Playing" with nothing coming out, and play/pause needed two taps.
+    private func observeInterruptions() {
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] note in
+            let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+            Task { @MainActor [weak self] in
+                self?.handleInterruption(typeRaw: raw, optionsRaw: optionsRaw)
+            }
+        }
+    }
+
+    private func handleInterruption(typeRaw: UInt?, optionsRaw: UInt) {
+        guard let typeRaw, let type = AVAudioSession.InterruptionType(rawValue: typeRaw),
+              currentTrack != nil else { return }
+        switch type {
+        case .began:
+            if isPlaying {
+                playerNode.pause()
+                isPlaying = false
+                updateNowPlaying()
+            }
+        case .ended:
+            // Resume only when iOS says it's appropriate (e.g. after a call,
+            // not after the user started music in another app).
+            guard AVAudioSession.InterruptionOptions(rawValue: optionsRaw).contains(.shouldResume) else { return }
+            do {
+                try configureSessionIfNeeded()
+                if !engine.isRunning { try engine.start() }
+                playerNode.play()
+                isPlaying = true
+                updateNowPlaying()
+            } catch {
+                errorMessage = "Could not resume playback."
+            }
+        @unknown default:
+            break
+        }
     }
 
     private func startPlayback(of url: URL) throws {
