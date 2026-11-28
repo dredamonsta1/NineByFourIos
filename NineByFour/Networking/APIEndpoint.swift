@@ -26,6 +26,8 @@ nonisolated enum APIEndpoint: Sendable {
     // MARK: - Albums (Pillar B commerce)
     case albumStream(id: Int)
     case albumPreview(id: Int)
+    /// Apple Music's 30s clip for an album (GET /artists/:id/preview?album=&provider=apple).
+    case artistSample(artistId: Int)
 
     // MARK: - Live recordings (Internet Archive bootlegs)
     case liveRecordings(artistId: Int)
@@ -115,6 +117,7 @@ nonisolated enum APIEndpoint: Sendable {
         // Albums
         case .albumStream(let id): return "/albums/\(id)/stream"
         case .albumPreview(let id): return "/albums/\(id)/preview"
+        case .artistSample(let artistId): return "/artists/\(artistId)/preview"
         case .liveRecordings(let artistId):
             return "/live-recordings?artist_id=\(artistId)&limit=50"
         case .liveRecordingTracks(let recordingId):
@@ -184,7 +187,7 @@ nonisolated enum APIEndpoint: Sendable {
     var requiresAuth: Bool {
         switch self {
         case .requestCode, .verifyCode, .waitlistJoin, .waitlistVerify,
-             .albumPreview, .liveRecordings, .liveRecordingTracks, .videos:
+             .albumPreview, .artistSample, .liveRecordings, .liveRecordingTracks, .videos:
             return false
         default:
             return true

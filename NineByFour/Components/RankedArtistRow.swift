@@ -48,19 +48,17 @@ struct RankedArtistRow: View {
 
                 Spacer(minLength: 6)
 
-                // Clout is the ranking's unit, so it earns a place on the row.
-                // Zero is shown as a dash rather than "0" — only ~57 of 112k
-                // artists have any, so a column of zeroes would read as the
-                // ranking being broken rather than the catalogue being deep.
-                if let count = artist.count, count > 0 {
+                // Clout is the ranking's unit, but only from PublicCount's
+                // threshold up: "6" reads as "nobody is here" (web #203, iOS
+                // #48 hid it everywhere else; this row was missed). Below it
+                // the row shows nothing, not a dash: a whole column of dashes
+                // would read as the ranking being broken. The order still says
+                // who's ahead.
+                if PublicCount.shows(artist.count), let count = artist.count {
                     Label("\(count)", systemImage: "flame.fill")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Color.Theme.accent)
                         .labelStyle(.titleAndIcon)
-                } else {
-                    Text("—")
-                        .font(.caption2)
-                        .foregroundStyle(Color.Theme.textSecondary.opacity(0.5))
                 }
             }
             .padding(.vertical, 7)
