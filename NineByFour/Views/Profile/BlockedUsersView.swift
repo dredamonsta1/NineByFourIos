@@ -22,7 +22,7 @@ struct BlockedUser: Codable, Identifiable {
     }
 }
 
-private struct BlockedUsersResponse: Codable {
+struct BlockedUsersResponse: Codable {
     let blocks: [BlockedUser]
 }
 

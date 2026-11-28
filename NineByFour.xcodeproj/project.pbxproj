@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0366C3A52F4B7155000526AB /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 03C3FDF22F4A943B0083B32D /* Kingfisher */; };
 		0366C3A62F4B7155000526AB /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 03C3FDF32F4A943B0083B32D /* KeychainAccess */; };
+		A1B2C3D4E5F6071829304A5D /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6071829304A5C /* LiveKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 			files = (
 				0366C3A62F4B7155000526AB /* KeychainAccess in Frameworks */,
 				0366C3A52F4B7155000526AB /* Kingfisher in Frameworks */,
+				A1B2C3D4E5F6071829304A5D /* LiveKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +101,7 @@
 			packageProductDependencies = (
 				03C3FDF22F4A943B0083B32D /* Kingfisher */,
 				03C3FDF32F4A943B0083B32D /* KeychainAccess */,
+				A1B2C3D4E5F6071829304A5C /* LiveKit */,
 			);
 			productName = NineByFour;
 			productReference = 03C3FDD72F4A943B0083B32D /* NineByFour.app */;
@@ -158,6 +161,7 @@
 			packageReferences = (
 				03C3FDF02F4A943B0083B32D /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				03C3FDF12F4A943B0083B32D /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				A1B2C3D4E5F6071829304A5B /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 03C3FDD82F4A943B0083B32D /* Products */;
@@ -499,6 +503,14 @@
 				minimumVersion = 4.2.0;
 			};
 		};
+		A1B2C3D4E5F6071829304A5B /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -511,6 +523,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 03C3FDF12F4A943B0083B32D /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		A1B2C3D4E5F6071829304A5C /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1B2C3D4E5F6071829304A5B /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

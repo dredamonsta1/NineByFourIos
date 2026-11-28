@@ -28,6 +28,9 @@ nonisolated enum APIEndpoint: Sendable {
     case albumPreview(id: Int)
     /// Apple Music's 30s clip for an album (GET /artists/:id/preview?album=&provider=apple).
     case artistSample(artistId: Int)
+    /// Live rooms (GET /rooms) and joining one (POST /rooms/:id/token).
+    case liveRooms
+    case roomToken(roomId: Int)
 
     // MARK: - Live recordings (Internet Archive bootlegs)
     case liveRecordings(artistId: Int)
@@ -118,6 +121,8 @@ nonisolated enum APIEndpoint: Sendable {
         case .albumStream(let id): return "/albums/\(id)/stream"
         case .albumPreview(let id): return "/albums/\(id)/preview"
         case .artistSample(let artistId): return "/artists/\(artistId)/preview"
+        case .liveRooms: return "/rooms"
+        case .roomToken(let roomId): return "/rooms/\(roomId)/token"
         case .liveRecordings(let artistId):
             return "/live-recordings?artist_id=\(artistId)&limit=50"
         case .liveRecordingTracks(let recordingId):
@@ -212,7 +217,8 @@ nonisolated enum APIEndpoint: Sendable {
              .addToProfileList, .follow,
              .createConversation, .sendMessage,
              .waitlistJoin, .waitlistVerify, .createEvent,
-             .blockUser, .reportContent, .musicPersonality:
+             .blockUser, .reportContent, .musicPersonality,
+             .roomToken:
             return .POST
 
         case .markConversationRead, .musicPersonalityVisibility:

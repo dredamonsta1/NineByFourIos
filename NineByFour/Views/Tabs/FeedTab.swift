@@ -67,6 +67,16 @@ struct FeedTab: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 if authManager.isAuthenticated {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink {
+                            RoomsListView()
+                        } label: {
+                            Image(systemName: "mic.fill")
+                        }
+                        .accessibilityLabel("Live rooms")
+                    }
+                }
+                if authManager.isAuthenticated {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
                             showPostCreator = true
